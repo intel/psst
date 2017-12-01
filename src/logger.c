@@ -155,7 +155,7 @@ int get_node_name(char *base, char *node, char *result)
 
 int find_path(char *base, char *node, char *match, char *replace, char *buf)
 {
-	int sz, fd, found;
+	int sz, fd, found = 0;
 	FILE *fp;
 	char value[64], path[512];
 	char list[2048] = {0};
