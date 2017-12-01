@@ -191,7 +191,7 @@ int find_path(char *base, char *node, char *match, char *replace, char *buf)
 		token = strtok(NULL, "\n");
 	} while (token);
 
-	if (!found | !token)
+	if (!found || !token)
 		return -1;
 
 	loc = strstr(token, node);
