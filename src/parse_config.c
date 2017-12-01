@@ -166,6 +166,7 @@ static int cpuset_to_bitmap(char *buf, cpu_set_t *cpumask)
 		if (!subtoken) {
 			k = atoi(token);
 			CPU_SET(k, cpumask);
+			free(token_copy);
 			continue;
 		} else {
 			k = atoi(subtoken);
@@ -173,6 +174,7 @@ static int cpuset_to_bitmap(char *buf, cpu_set_t *cpumask)
 			pos = token + strlen(subtoken) + 1;
 			while (++k <= atoi(pos))
 				CPU_SET(k, cpumask);
+			free(token_copy);
 		}
 		token = strtok_r(NULL, ",", &save1);
 	} while (token);
@@ -335,10 +337,13 @@ int parse_ei_parms(char *max_min, float *max, float *min)
 
 	running = strdup(max_min);
 	token = strtok(running, delimitor);
-	if (token)
+	if (token) {
 		*max = atof(token);
-	else
+		free(running);
+	} else {
+		free(running);
 		return 0;
+	}
 	token = strtok(NULL, delimitor);
 	if (token)
 		*min = atof(token);
@@ -360,6 +365,7 @@ int parse_power_shape(char *shape, data_t *pst)
 	running = strdup(shape);
 	token = strtok(running, delimitor);
 	if (!strcmp(token, "single-step")) {
+		free(running);
 		token = strtok(NULL, delimitor);
 		if (token) {
 			pst->psn = SINGLE_STEP;
@@ -370,6 +376,7 @@ int parse_power_shape(char *shape, data_t *pst)
 			return 0;
 		}
 	} else if (!strcmp(token, "stair-case")) {
+		free(running);
 		token = strtok(NULL, delimitor);
 		if (token) {
 			pst->psn = STAIR_CASE;
@@ -385,6 +392,7 @@ int parse_power_shape(char *shape, data_t *pst)
 			return 0;
 		}
 	} else if (!strcmp(token, "sinosoid")) {
+		free(running);
 		token = strtok(NULL, delimitor);
 		if (token) {
 			pst->psn = SINOSOID;
@@ -400,6 +408,7 @@ int parse_power_shape(char *shape, data_t *pst)
 			return 0;
 		}
 	} else if (!strcmp(token, "single-pulse")) {
+		free(running);
 		token = strtok(NULL, delimitor);
 		if (token) {
 			pst->psn = SINGLE_PULSE;
@@ -415,6 +424,7 @@ int parse_power_shape(char *shape, data_t *pst)
 			return 0;
 		}
 	} else if (!strcmp(token, "linear-ramp")) {
+		free(running);
 		token = strtok(NULL, delimitor);
 		if (token) {
 			pst->psn = LINEAR_RAMP;
@@ -425,6 +435,7 @@ int parse_power_shape(char *shape, data_t *pst)
 			return 0;
 		}
 	} else if (!strcmp(token, "saw-tooth")) {
+		free(running);
 		token = strtok(NULL, delimitor);
 		if (token) {
 			pst->psn = SAW_TOOTH;
@@ -439,6 +450,7 @@ int parse_power_shape(char *shape, data_t *pst)
 			return 0;
 		}
 	} else {
+		free(running);
 		return 0;
 	}
 	return 1;
