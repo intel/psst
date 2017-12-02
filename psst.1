@@ -9,15 +9,13 @@ psst \- Power Stress and Shaping Tool
 The Power Stress and Shaping Tool (\fBPSST\fR) is a controlled power 'virus'
 for Intel SoC components such as CPU and GPU.
 .br
-The objective is to expend virus power at run-time, varying levels for
-analysis. For example, linear-ramp as a stress function on CPU can be
-used to study OS governors. Likewise, a single-step function can be used
-to study and determine thermal response of PID controller coefficients.
-PSST enables very fine control of stress function without its own process
-overhead; unlike other viruses, PSST uses its own execution flows in a
-duty-cycled manner instead of "dummy work" loop. One useful artifact,
-therefore, is logging of  various power and thermal system parameters at
-a small fixed overhead independent of poll-period.
+The objective is to subject the SoC at different run-time-varying
+utilization levels for analysis. This is done by controlled duty-cycling
+of utilization to specific contour. A simplest contour could be fixed low
+utilization. This allows simple usage, such as logging of system parameters at
+fixed low overhead even at small polling intervals (ms). More complex usage,
+such as study of governors, workloads e.t.c., are possible by applying
+different power shape contours and options.
 
 .SH OPTIONS
 .TP
@@ -32,10 +30,10 @@ pollperiod specifies period for logging in milliseconds (default 500 ms)
 specifies duration m in milliseconds to run psst (default is 3600000; 1 hour)
 .TP
 .B \-l \-\-log\-file path
-specifies the full path to the logfile (default is /var/log/pbot.csv)
+specifies the full path to the logfile (default is /var/log/psst.csv)
 .TP
 .B \-v \-\-verbose
-enables verbose mode (default is disabled)
+enables verbose mode (default: disabled when args specified)
 .TP
 .B \-V \-\-Version
 prints version
@@ -69,7 +67,7 @@ linear-ramp,m	T{
 where m is the slope (load/sec)
 T}
 saw-tooth,m,a	T{
-slope m (load/sec) reversed after max a% or min(0.1)%
+slope m (load/sec); reversed after max a% or min(0.1)%
 T}
 .TE
 .SH EXAMPLES

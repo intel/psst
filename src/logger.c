@@ -235,7 +235,7 @@ void trigger_disk_io(void)
 
 void accumulate_flush_record(char *record, int sz)
 {
-	if (PAGE_SIZE_BYTES - active_pg_filled < sz)
+	if ((PAGE_SIZE_BYTES - active_pg_filled < sz) || exit_cpu_thread)
 		return;
 
 	/*
@@ -298,11 +298,15 @@ void page_write_disk(void *confg)
 		if (!exit_cpu_thread) {
 			wr_sz = write(cfg->log_file_fd, dirty_pg,
 							dirty_pg_filled - 1);
+			if (wr_sz == -1)
+				perror("fail dirty pg write");
 			dbg_print("wrote %d io page bytes to log.\n", wr_sz);
 		} else {
 			/* reset to top of page */
 			wr_sz = write(cfg->log_file_fd, active_pg,
 							active_pg_filled - 1);
+			if (wr_sz == -1)
+				perror("fail active pg write");
 			/* NULL terminate whatever data we have written */
 			dbg_print("wrote %d active pg bytes to log.\n", wr_sz);
 		}
@@ -511,9 +515,10 @@ void do_logging(float *duty_cycle)
 	char delim[] = ",     ";
 	log_col_t i;
 	int sz, sz1, pkg_num;
-	unsigned int aperf_diff;
-	unsigned int mperf_diff;
-	unsigned int tsc_diff;
+	/* diff init values are only to quiesce static analysers */
+	unsigned int aperf_diff = 1;
+	unsigned int mperf_diff = 1;
+	unsigned int tsc_diff = 1;
 	unsigned int maxed_cpu = 0;
 	struct timespec tm;
 
@@ -531,6 +536,10 @@ void do_logging(float *duty_cycle)
 	plog_last_tm.tv_sec = tm.tv_sec;
 	plog_last_tm.tv_nsec = tm.tv_nsec;
 
+	/*
+	 * When dev_msr not supported, the diffs are not pupulated.
+	 * In these cases the associated columns have been disabled anyway.
+	 */
 	if (dev_msr_supported)
 		maxed_cpu = update_amperf_diffs(&aperf_diff, &mperf_diff,
 						&tsc_diff, need_maxed_cpu);
@@ -690,6 +699,8 @@ void do_logging(float *duty_cycle)
 		log_header[sz] = '\0';
 
 		sz = write(configpv.log_file_fd, log_header, sz);
+		if (sz == -1)
+			perror("log_header write");
 		if (!configpv.verbose)
 			printf("report being logged to %s\n",
 				configpv.log_file_name);

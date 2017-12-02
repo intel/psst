@@ -24,8 +24,9 @@
  * typically platforms have kernel (HZ == USER_HZ == 1000 per sec)
  */
 #define IA_DUTY_CYCLE_PER_SEC (50)
-
 #define IA_TICK_USEC (USEC_PER_SEC / IA_DUTY_CYCLE_PER_SEC)
+
+#define DEFAULT_TICK_USEC (IA_TICK_USEC)
 
 #define MIN_LOAD (0.10)
 #define MAX_LOAD (100)

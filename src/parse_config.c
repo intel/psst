@@ -329,30 +329,6 @@ static void verbose_prints(struct config *configp)
 	printf("\n");
 }
 
-int parse_ei_parms(char *max_min, float *max, float *min)
-{
-	char *token;
-	char *delimitor = ",";
-	char *running;
-
-	running = strdup(max_min);
-	token = strtok(running, delimitor);
-	if (token) {
-		*max = atof(token);
-		free(running);
-	} else {
-		free(running);
-		return 0;
-	}
-	token = strtok(NULL, delimitor);
-	if (token)
-		*min = atof(token);
-	else
-		return 0;
-
-	return 1;
-}
-
 int parse_power_shape(char *shape, data_t *pst)
 {
 	char *token;
