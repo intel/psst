@@ -1,6 +1,7 @@
 VERSION = 0.1
 
 BINDIR = /usr/bin
+MANDIR = /usr/share/man/man1
 WARNFLAGS = -Wall -Wformat
 CC = gcc
 CFLAGS += -D VERSION=\"$(VERSION)\"
@@ -23,6 +24,8 @@ psst: $(OBJS) Makefile
 install:
 	mkdir -p $(BINDIR)
 	$(INSTALL_PROGRAM) "$(TARGET)" "$(BINDIR)/$(TARGET)"
+	gzip -c psst.1 > psst.1.gz
+	mv -f psst.1.gz $(MANDIR)
 
 uninstall:
 	$(DEL_FILE) "$(BINDIR)/$(TARGET)"
