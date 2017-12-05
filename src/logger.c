@@ -170,8 +170,8 @@ int find_path(char *base, char *node, char *match, char *replace, char *buf)
 	}
 
 	sz = fread(list, 1, sizeof(list), fp);
+	pclose(fp);
 	if (!sz) {
-		pclose(fp);
 		dbg_print("fread failed. path %s\n", path);
 		return -1;
 	} else
