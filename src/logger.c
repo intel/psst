@@ -178,6 +178,8 @@ int find_path(char *base, char *node, char *match, char *replace, char *buf)
 		list[sz] = '\0';
 
 	token = strtok(list, "\n");
+	if (!token)
+		return -1;
 	do {
 		fd = open(token, O_RDONLY);
 		if (fd > 0)
