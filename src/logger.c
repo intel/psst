@@ -526,6 +526,8 @@ void do_logging(float *duty_cycle)
 	unsigned int maxed_cpu = 0;
 	struct timespec tm;
 
+	*buf = '\0';
+
 	if (clock_gettime(CLOCK_MONOTONIC, &tm))
 		perror("clock_gettime");
 
