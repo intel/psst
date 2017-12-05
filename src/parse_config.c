@@ -340,6 +340,10 @@ int parse_power_shape(char *shape, data_t *pst)
 	/* use strdupa to auto free on stack exit */
 	running = strdup(shape);
 	token = strtok(running, delimitor);
+	if (!token) {
+		free(running);
+		return 1;
+	}
 	if (!strcmp(token, "single-step")) {
 		free(running);
 		token = strtok(NULL, delimitor);
