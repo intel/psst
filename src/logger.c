@@ -328,7 +328,7 @@ int need_maxed_cpu;
 void initialize_logger(void)
 {
 	int i;
-	char path[256];
+	char path[256] = "";
 
 	for (i = 0; i < MAX_COL_NUM; i++) {
 		if (!col_desc[i].report_enabled) {
