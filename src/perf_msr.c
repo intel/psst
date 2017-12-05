@@ -71,7 +71,7 @@ static uint64_t last_tsc;
 #define generate_msr_diff(scope)					       \
 unsigned int get_diff_##scope(uint64_t cur_value)			       \
 {									       \
-	uint64_t diff;							       \
+	int64_t diff;							       \
 	diff = (VAR(last_, scope) == 0) ? 0 : (cur_value - VAR(last_, scope)); \
 	VAR(last_, scope) = cur_value;					       \
 	if (diff < 0) {							       \
@@ -89,7 +89,7 @@ static uint64_t last_mperf[MAX_CPU_REPORTS];
 #define cpu_generate_msr_diff(scope)					       \
 unsigned int cpu_get_diff_##scope(uint64_t cur_value, int instance)	       \
 {									       \
-	uint64_t diff;							       \
+	int64_t diff;							       \
 	diff = (VARI(last_, scope, instance) == 0) ?			       \
 				0 : (cur_value - VARI(last_, scope, instance));\
 	VARI(last_, scope, instance) = cur_value;			       \
