@@ -451,7 +451,7 @@ int update_amperf_diffs(unsigned int *aperf_diff, unsigned int *mperf_diff,
 {
 	int fd, maxed_cpu, c, i, max_load, next_max_load;
 	uint64_t aperf_raw, mperf_raw, tsc_raw;
-	unsigned int a_diff[MAX_CPU_REPORTS], m_diff[MAX_CPU_REPORTS];
+	unsigned int a_diff[MAX_CPU_REPORTS] = { 0 }, m_diff[MAX_CPU_REPORTS] = { 0 };
 
 	tsc_raw = read_msr(dev_msr_fd[0], (uint32_t)MSR_IA32_TSC);
 	*tsc_diff = get_diff_tsc(tsc_raw);
