@@ -151,7 +151,7 @@ int power_shaping(ps_t *ps, float *v_unit)
 		x_delta = PS_MIN_POLL_MS;
 		if (is_time_remaining(CLOCK_MONOTONIC, &ps->last, 0, x_delta * 1000000))
 			return 0;
-		y_delta = ps->psa.linear_ramp.slope_y_per_sec / (MSEC_PER_SEC/x_delta);
+		y_delta = ps->psa.linear_ramp.slope_y_per_sec / ((float)MSEC_PER_SEC/x_delta);
 		*v_unit = *v_unit + y_delta;
 		if (cap_v_unit(v_unit, MAX_LOAD, MIN_LOAD))
 			return 0;
@@ -164,7 +164,7 @@ int power_shaping(ps_t *ps, float *v_unit)
 					(*v_unit <= (float)MIN_LOAD)) {
 			ps->psa.linear_ramp.slope_y_per_sec *= -1;
 		}
-		y_delta = ps->psa.linear_ramp.slope_y_per_sec / (MSEC_PER_SEC/x_delta);
+		y_delta = ps->psa.linear_ramp.slope_y_per_sec / ((float)MSEC_PER_SEC/x_delta);
 		*v_unit = *v_unit + y_delta;
 		cap_v_unit(v_unit, ps->psa.saw_tooth.max_y, MIN_LOAD);
 		break;
