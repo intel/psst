@@ -194,6 +194,7 @@ static int populate_online_cpumask(cpu_set_t *cpumask)
 	}
 	if (!fread(buf, 1, 64, fp)) {
 		printf("populate_online_cpumask: fread failed\n");
+		pclose(fp);
 		return -1;
 	}
 	pclose(fp);
