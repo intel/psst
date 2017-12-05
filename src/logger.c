@@ -182,8 +182,10 @@ int find_path(char *base, char *node, char *match, char *replace, char *buf)
 		return -1;
 	do {
 		fd = open(token, O_RDONLY);
-		if (fd > 0)
+		if (fd >= 0) {
 			sz = read(fd, value, sizeof(value));
+			close(fd);
+		}
 		if (sz > 0)
 			value[sz - 1] = '\0';
 		if (strcmp(value, match) == 0) {
