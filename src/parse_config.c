@@ -183,21 +183,23 @@ static int cpuset_to_bitmap(char *buf, cpu_set_t *cpumask)
 
 static int populate_online_cpumask(cpu_set_t *cpumask)
 {
-	char buf[64];
+	char buf[65];
 	FILE *fp;
+	size_t sz;
 
 	/* Open the command for reading in pipe. */
-	fp = popen("cat /sys/devices/system/cpu/online", "r");
+	fp = fopen("/sys/devices/system/cpu/online", "r");
 	if (fp == NULL) {
 		printf("Failed to get online cpu list\n");
 		return -1;
 	}
-	if (!fread(buf, 1, 64, fp)) {
+	sz = fread(buf, 1, sizeof(buf) - 1, fp);
+	fclose(fp);
+	if (sz == 0) {
 		printf("populate_online_cpumask: fread failed\n");
-		pclose(fp);
 		return -1;
 	}
-	pclose(fp);
+	buf[sz] = '\0';
 	cpuset_to_bitmap(buf, cpumask);
 	return 0;
 }
