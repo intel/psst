@@ -170,18 +170,22 @@ int find_path(char *base, char *node, char *match, char *replace, char *buf)
 	}
 
 	sz = fread(list, 1, sizeof(list), fp);
+	pclose(fp);
 	if (!sz) {
-		pclose(fp);
 		dbg_print("fread failed. path %s\n", path);
 		return -1;
 	} else
 		list[sz] = '\0';
 
 	token = strtok(list, "\n");
+	if (!token)
+		return -1;
 	do {
 		fd = open(token, O_RDONLY);
-		if (fd > 0)
+		if (fd >= 0) {
 			sz = read(fd, value, sizeof(value));
+			close(fd);
+		}
 		if (sz > 0)
 			value[sz - 1] = '\0';
 		if (strcmp(value, match) == 0) {
@@ -324,7 +328,7 @@ int need_maxed_cpu;
 void initialize_logger(void)
 {
 	int i;
-	char path[256];
+	char path[256] = "";
 
 	for (i = 0; i < MAX_COL_NUM; i++) {
 		if (!col_desc[i].report_enabled) {
@@ -447,7 +451,7 @@ int update_amperf_diffs(unsigned int *aperf_diff, unsigned int *mperf_diff,
 {
 	int fd, maxed_cpu, c, i, max_load, next_max_load;
 	uint64_t aperf_raw, mperf_raw, tsc_raw;
-	unsigned int a_diff[MAX_CPU_REPORTS], m_diff[MAX_CPU_REPORTS];
+	unsigned int a_diff[MAX_CPU_REPORTS] = { 0 }, m_diff[MAX_CPU_REPORTS] = { 0 };
 
 	tsc_raw = read_msr(dev_msr_fd[0], (uint32_t)MSR_IA32_TSC);
 	*tsc_diff = get_diff_tsc(tsc_raw);
@@ -521,6 +525,8 @@ void do_logging(float *duty_cycle)
 	unsigned int tsc_diff = 1;
 	unsigned int maxed_cpu = 0;
 	struct timespec tm;
+
+	*buf = '\0';
 
 	if (clock_gettime(CLOCK_MONOTONIC, &tm))
 		perror("clock_gettime");
