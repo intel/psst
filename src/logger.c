@@ -707,10 +707,9 @@ void do_logging(float *duty_cycle)
 		sz = write(configpv.log_file_fd, log_header, sz);
 		if (sz == -1)
 			perror("log_header write");
-		if (!configpv.verbose)
-			printf("report being logged to %s\n",
-				configpv.log_file_name);
-		else
+
+		printf("report being logged to %s... ^C to exit.\n", configpv.log_file_name);
+		if (configpv.verbose)
 			printf("%s\n", log_header);
 	}
 
@@ -730,8 +729,8 @@ void do_logging(float *duty_cycle)
 
 	if (configpv.verbose)
 		printf("%s", final_buf);
-	else
-		accumulate_flush_record(final_buf, sz+1);
+
+	accumulate_flush_record(final_buf, sz+1);
 
 	first_log = 0;
 }
