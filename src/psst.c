@@ -461,7 +461,7 @@ int main(int argc, char *argv[])
 		goto bail;
 	}
 
-	for (c = 0, i = 0; c < CPU_SETSIZE || i < MAX_CPU_REPORTS; c++, i++) {
+	for (c = 0, i = 0; c < CPU_SETSIZE && i < MAX_CPU_REPORTS; c++) {
 		if (!CPU_ISSET(c, &cfg->cpumask))
 			continue;
 		ret = initialize_dev_msr(c);
@@ -473,6 +473,7 @@ int main(int argc, char *argv[])
 			dev_msr_fd[i] = ret;
 			dev_msr_supported = 1;
 		}
+		i++;
 	}
 	initialize_cpu_khz(dev_msr_fd[0]);
 
