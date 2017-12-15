@@ -35,8 +35,8 @@ static struct option long_options[] = {
 	{"log-file",    1,      0,      'l'},
 	{"poll-period", 1,      0,      'p'},
 	{"shape-func",  1,      0,      's'},
-	{"verbose",     1,      0,      'v'},
-	{"version",     1,      0,      'V'},
+	{"verbose",     0,      0,      'v'},
+	{"version",     0,      0,      'V'},
 	{"help",        0,      0,      'h'},
 	{0, 0, 0, 0}
 };
@@ -52,7 +52,7 @@ void print_usage(char *prog)
 	printf("\t-d|--duration\t\t<duration> (ms) to run the tool (default: 3600000 i.e., 1hr)\n");
 	printf("\t-l|--log-file\t\t</path/to/log-file> (default: %s)\n", default_log_file);
 	printf("\t-v|--verbose\t\tenables verbose mode (default: disabled when args specified)\n");
-	printf("\t-V|--Version\t\tprints version when specified\n");
+	printf("\t-V|--version\t\tprints version when specified\n");
 	printf("\t-T|--track-max-cpu\ttrack the cpu# which had max freq during each polling\n");
 	printf("\t-h|--help\t\tprints usage when specified\n");
 	printf("\t-s|--shape-func\t\t<shape-func,arg> (default: single-step,0.1)\n");
