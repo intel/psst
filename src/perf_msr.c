@@ -83,6 +83,7 @@ generate_msr_diff(tsc);
 
 static uint64_t last_aperf[MAX_CPU_REPORTS];
 static uint64_t last_mperf[MAX_CPU_REPORTS];
+static uint64_t last_pperf[MAX_CPU_REPORTS];
 
 /* routine to evaluate & store a per-cpu msr value's diff */
 #define VARI(a, b, i) a##b[i]
@@ -101,4 +102,5 @@ unsigned int cpu_get_diff_##scope(uint64_t cur_value, int instance)	       \
 
 cpu_generate_msr_diff(aperf);
 cpu_generate_msr_diff(mperf);
+cpu_generate_msr_diff(pperf);
 

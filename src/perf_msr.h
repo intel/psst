@@ -21,6 +21,7 @@
 
 #define MSR_IA32_MPERF		0xe7
 #define MSR_IA32_APERF		0xe8
+#define MSR_IA32_PPERF		0x64e
 #define MSR_IA32_TSC		0x10
 #define MSR_PLATFORM_INFO	0xce
 #define MSR_PERF_STATUS		0x198
@@ -33,5 +34,6 @@ extern int initialize_dev_msr(int c);
 extern int initialize_cpu_khz(int fd);
 extern unsigned int cpu_get_diff_aperf(uint64_t a, int i);
 extern unsigned int cpu_get_diff_mperf(uint64_t m, int i);
+extern unsigned int cpu_get_diff_pperf(uint64_t p, int i);
 extern unsigned int get_diff_tsc(uint64_t t);
 #endif

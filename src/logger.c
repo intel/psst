@@ -47,32 +47,34 @@
 
 /* fixed columns of the log output */
 struct log_col_desc col_desc[] = {
-	/* 1. TIME_STAMP_MS: time stamp in millisec */
+	/* TIME_STAMP_MS: time stamp in millisec */
 	INIT_COL(1, Time, [ms], 9.0, 1, NO_FD, 0),
-	/* 2. FREQ_REALIZED: average frequency (cpu0) since last poll */
+	/* FREQ_REALIZED: average frequency (cpu0) since last poll */
 	INIT_COL(1, FreqReal, [MHz], 8.0, 0.1, MSR_FD, 0),
-	/* 3. MAX_FREQ_CPU: smp cpu that delivered max freq in last sample */
+	/* MAX_FREQ_CPU: smp cpu that delivered max freq in last sample */
 	INIT_COL(1, MxdCpu, [#], 5.0, 1, NO_FD, 0),
-	/* 4. LOAD_REQUEST: cpu overhead requested by this program */
+	/* LOAD_REQUEST: cpu overhead requested by this program */
 	INIT_COL(1, LoadIn, [C0_%], 6.2, 1, NO_FD, 0),
-	/* 5. LOAD_REALIZED: actual overall cpu overhead in the system */
+	/* LOAD_REALIZED: actual overall cpu overhead in the system */
 	INIT_COL(1, LoadOut, [C0_%], 7.2, 1, MSR_FD, 0),
-	/* 6. PKG_POWER_RAPL: sysfs rapl power package scope. */
+	/* SCALE_FACTOR: workload scaling factor on a cpu */
+	INIT_COL(1, ScaleF, [%], 7.2, 1, MSR_FD, 0),
+	/* PKG_POWER_RAPL: sysfs rapl power package scope. */
 	INIT_COL(1, pwrPkg0, [mWatt], 8.2, 1, NORMAL_FD, 0),
 	INIT_COL(1, pwrPkg1, [mWatt], 8.2, 1, NORMAL_FD, 0),
 	INIT_COL(1, pwrPkg2, [mWatt], 8.2, 1, NORMAL_FD, 0),
 	INIT_COL(1, pwrPkg3, [mWatt], 8.2, 1, NORMAL_FD, 0),
-	/* 7. PKG_POWER_LIMIT: sysfs rapl power limit (pkg). */
+	/* PKG_POWER_LIMIT: sysfs rapl power limit (pkg). */
 	INIT_COL(0, PkgLmt, [mWatt], 7.2, 0.001, NORMAL_FD, 0),
-	/* 8. PP0_POWER_RAPL: sysfs rapl power PP0 or core scope. */
+	/* PP0_POWER_RAPL: sysfs rapl power PP0 or core scope. */
 	INIT_COL(1, PwrCore, [mWatt], 8.2, 1, NORMAL_FD, 0),
-	/* 9. PP1_POWER_RAPL: sysfs rapl power PP1 or uncore scope. */
+	/* PP1_POWER_RAPL: sysfs rapl power PP1 or uncore scope. */
 	INIT_COL(1, PwrGpu, [mWatt], 8.2, 1, NORMAL_FD, 0),
-	/* 10. DRAM_POWER_RAPL: sysfs rapl power PP1 or uncore scope. */
+	/* DRAM_POWER_RAPL: sysfs rapl power PP1 or uncore scope. */
 	INIT_COL(1, PwrDram, [mWatt], 7.2, 1, NORMAL_FD, 0),
-	/* 11. CPU_DTS: cpu die temp  */
+	/* CPU_DTS: cpu die temp  */
 	INIT_COL(1, CpuDts, [DegC], 6.2, 0.001, NORMAL_FD, 0),
-	/* 12 SOC_DTS: cpu die temp  */
+	/* SOC_DTS: cpu die temp  */
 	INIT_COL(1, SocDts, [DegC], 6.2, 0.001, NORMAL_FD, 0),
 };
 
@@ -340,6 +342,7 @@ void initialize_logger(void)
 		switch (i) {
 		case FREQ_REALIZED:
 		case LOAD_REALIZED:
+		case SCALE_FACTOR:
 		/* XXX: for gfx C0, create separate columns */
 			if (get_node_name("/dev/cpu/0", "msr", NULL) < 0) {
 				col_desc[i].report_enabled = 0;
@@ -446,12 +449,15 @@ uint64_t diff_ns(struct timespec *ts_then, struct timespec *ts_now)
 	return diff;
 }
 
-int update_amperf_diffs(unsigned int *aperf_diff, unsigned int *mperf_diff,
-				unsigned int *tsc_diff, int need_maxed_cpu)
+int update_perf_diffs(unsigned int *aperf_diff, unsigned int *mperf_diff,
+		      unsigned int *pperf_diff, unsigned int *tsc_diff,
+		      int need_maxed_cpu)
 {
 	int fd, maxed_cpu, c, i, max_load, next_max_load;
-	uint64_t aperf_raw, mperf_raw, tsc_raw;
-	unsigned int a_diff[MAX_CPU_REPORTS] = { 0 }, m_diff[MAX_CPU_REPORTS] = { 0 };
+	uint64_t aperf_raw, mperf_raw, pperf_raw, tsc_raw;
+	unsigned int a_diff[MAX_CPU_REPORTS] = { 0 },
+		     m_diff[MAX_CPU_REPORTS] = { 0 },
+		     p_diff[MAX_CPU_REPORTS] = { 0 };
 
 	tsc_raw = read_msr(dev_msr_fd[0], (uint32_t)MSR_IA32_TSC);
 	*tsc_diff = get_diff_tsc(tsc_raw);
@@ -463,10 +469,13 @@ int update_amperf_diffs(unsigned int *aperf_diff, unsigned int *mperf_diff,
 		fd = dev_msr_fd[i];
 
 		aperf_raw = read_msr(fd, (uint32_t)MSR_IA32_APERF);
-		a_diff[i] = cpu_get_diff_aperf(aperf_raw, i);
-
 		mperf_raw = read_msr(fd, (uint32_t)MSR_IA32_MPERF);
+		pperf_raw = read_msr(fd, (uint32_t)MSR_IA32_PPERF);
+
+		a_diff[i] = cpu_get_diff_aperf(aperf_raw, i);
 		m_diff[i] = cpu_get_diff_mperf(mperf_raw, i);
+		p_diff[i] = cpu_get_diff_pperf(pperf_raw, i);
+
 		m_diff[i] = m_diff[i] == 0 ? 1 : m_diff[i];
 		i++;
 
@@ -474,13 +483,14 @@ int update_amperf_diffs(unsigned int *aperf_diff, unsigned int *mperf_diff,
 	if (!need_maxed_cpu) {
 		*aperf_diff = a_diff[0];
 		*mperf_diff = m_diff[0];
+		*pperf_diff = p_diff[0];
 		return 0;
 	}
 
 	/* 
 	 * find the cpu to which max load belonged.
 	 * Ideally for discrete voltage rails systems, we could
-	 * track max frequency. Until them, for most other systems
+	 * track max frequency. For most other systems
 	 * it is simple to track max load.
 	 * This however assumes that governance has freq as monotonically 
 	 * proportional to load. 
@@ -500,6 +510,7 @@ int update_amperf_diffs(unsigned int *aperf_diff, unsigned int *mperf_diff,
 
 	*aperf_diff = a_diff[maxed_cpu];
 	*mperf_diff = m_diff[maxed_cpu];
+	*pperf_diff = p_diff[maxed_cpu];
 
 	return maxed_cpu;
 }
@@ -522,6 +533,7 @@ void do_logging(float *duty_cycle)
 	/* diff init values are only to quiesce static analysers */
 	unsigned int aperf_diff = 1;
 	unsigned int mperf_diff = 1;
+	unsigned int pperf_diff = 1;
 	unsigned int tsc_diff = 1;
 	unsigned int maxed_cpu = 0;
 	struct timespec tm;
@@ -547,8 +559,8 @@ void do_logging(float *duty_cycle)
 	 * In these cases the associated columns have been disabled anyway.
 	 */
 	if (dev_msr_supported)
-		maxed_cpu = update_amperf_diffs(&aperf_diff, &mperf_diff,
-						&tsc_diff, need_maxed_cpu);
+		maxed_cpu = update_perf_diffs(&aperf_diff, &mperf_diff,
+					&pperf_diff, &tsc_diff, need_maxed_cpu);
 
 	for (i = 0; i < MAX_COL_NUM; i++) {
 		if (!col_desc[i].report_enabled)
@@ -574,6 +586,11 @@ void do_logging(float *duty_cycle)
 		case LOAD_REALIZED:
 			/* real C0 = delta-mperf/delta-tsc */
 			col_desc[i].value = (float) mperf_diff*100/tsc_diff;
+			if (first_log)
+				col_desc[i].value = 1;
+			break;
+		case SCALE_FACTOR:
+			col_desc[i].value = (float) pperf_diff*100/aperf_diff;
 			if (first_log)
 				col_desc[i].value = 1;
 			break;

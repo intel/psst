@@ -37,6 +37,7 @@ typedef enum log_col {TIME_STAMP_MS,
 		      MAX_FREQ_CPU,
 		      LOAD_REQUEST,
 		      LOAD_REALIZED,
+		      SCALE_FACTOR,
 		      PKG0_POWER_RAPL,
 		      PKG1_POWER_RAPL,
 		      PKG2_POWER_RAPL,
@@ -73,6 +74,6 @@ extern void initialize_log_clock(void);
 extern void page_write_disk(void *);
 extern void trigger_disk_io(void);
 extern uint64_t diff_ns(struct timespec *, struct timespec *);
-extern int update_amperf_diffs(unsigned int *a,
-			unsigned int *m, unsigned int *t, int max);
+extern int update_perf_diffs(unsigned int *a, unsigned int *m, unsigned int *p,
+			     unsigned int *t, int max);
 #endif

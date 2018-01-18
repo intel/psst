@@ -296,7 +296,7 @@ static void work_fn(void *data)
 				pr, duration_sec, duration_nsec);
 		initialize_log_clock();
 		unsigned int dummy;
-		dummy = update_amperf_diffs(&dummy, &dummy, &dummy, 0);
+		dummy = update_perf_diffs(&dummy, &dummy, &dummy, &dummy, 0);
 	}
 
 	/* monotonic clock initial reference. updated during power_shaping */
