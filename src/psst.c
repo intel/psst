@@ -296,7 +296,8 @@ static void work_fn(void *data)
 				pr, duration_sec, duration_nsec);
 		initialize_log_clock();
 		unsigned int dummy;
-		dummy = update_perf_diffs(&dummy, &dummy, &dummy, &dummy, 0);
+	        if (dev_msr_supported)
+			dummy = update_perf_diffs(&dummy, &dummy, &dummy, &dummy, 0);
 	}
 
 	/* monotonic clock initial reference. updated during power_shaping */
@@ -371,6 +372,7 @@ static void work_fn(void *data)
 			printf("\tEnergy consumed (soc): %.3f mJ\n",
 						 (float)soc_diff_uj/1000);
 			printf("Applicable to CPU\n");
+
 			printf("\tAvg cpu power: %.3f W\n", pp0_r_avg);
 			printf("\tEnergy consumed (cpu): %.3f mJ\n",
 						 (float)pp0_diff_uj/1000);

@@ -108,6 +108,14 @@ int populate_default_config(struct config *configp)
 			CPU_SET(0, &configp->cpumask);
 		}
 	}
+	/*
+	 * cpu0 is special. It has to be always enabled. Move the
+	 * user intention as cpu_stress_opt reason.
+	 */
+	if (!CPU_ISSET(0, &configp->cpumask)) {
+		cpu_stress_opt = DONT_STRESS_CPU0;
+		CPU_SET(0, &configp->cpumask);
+	}
 	if (!configp->log_file_name[0]) {
 		strncpy(configp->log_file_name, default_log_file,
 				sizeof(default_log_file)+1);
