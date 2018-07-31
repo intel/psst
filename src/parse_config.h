@@ -58,14 +58,13 @@ struct config {
 	unsigned int duration;
 };
 
-typedef enum cpu_stress_option { DONT_STRESS_CPU0,
-				 UNDEFINED,
+extern int dont_stress_cpu0;
+typedef enum cpu_stress_option { UNDEFINED,
 				 WELL_DEFINED } cpu_stress_opt_t;
 extern cpu_stress_opt_t cpu_stress_opt;
 extern int parse_cmd_config(int ac, char **av, struct config *configp);
 extern int populate_default_config(struct config *configp);
 extern int parse_power_shape(char *shape, data_t *pst);
 extern int avail_freq_item(int item);
-extern float Rmax, Rmin, Qmax, Qmin;
 
 #endif

@@ -210,6 +210,8 @@ int power_shaping(ps_t *ps, float *v_unit)
 			}
 		}
 		break;
+	case NONE:
+		break;
 	default:
 		/* single step */
 		*v_unit = ps->psa.single_step.v_units;
@@ -223,8 +225,6 @@ int power_shaping(ps_t *ps, float *v_unit)
 
 }
 
-static int chore_thread = -1;
-pthread_mutex_t plock;
 #define START_DELAY 0
 
 unsigned int pp0_diff_uj, soc_diff_uj;
@@ -265,24 +265,8 @@ static void work_fn(void *data)
 
 	/* fix duty cycle to to non-zero min value */
 	duty_cycle = (duty_cycle == 0) ? MIN_LOAD : duty_cycle;
-	/* initial on/off time calcuation based on duty cycle */
-	on_time_us = (tick_usec * duty_cycle / 100);
-	off_time_us = tick_usec - on_time_us;
-	dbg_print("Thread:%x DutyCycle:%f ontime:%duS, idletime:%duS\n",
-			(unsigned int)pthread_self(),
-			duty_cycle, on_time_us, off_time_us);
 
-	/*
-	 * If cpu0 was not selected, the first thread that comes
-	 * here will do the cpu0's logging work
-	 */
-	pthread_mutex_lock(&plock);
-	if ((!CPU_ISSET(0, &configpv.cpumask) &&
-			  (chore_thread < 0)) || (pr == 0))
-		chore_thread = pr;
-	pthread_mutex_unlock(&plock);
-
-	if (chore_thread == pr) {
+	if (pr == 0) {
 		plog_poll_sec = MSEC_TO_SEC(configpv.poll_period);
 		plog_poll_nsec = (plog_poll_sec > 0) ?
 					REMAINING_MS_TO_NS(configpv.poll_period) :
@@ -298,7 +282,17 @@ static void work_fn(void *data)
 		unsigned int dummy;
 	        if (dev_msr_supported)
 			dummy = update_perf_diffs(&dummy, &dummy, &dummy, &dummy, 0);
+		if (dont_stress_cpu0) {
+			duty_cycle = MIN_LOAD;
+			ps.psn = NONE;
+		}
 	}
+	/* initial on/off time calcuation based on duty cycle */
+	on_time_us = (tick_usec * duty_cycle / 100);
+	off_time_us = tick_usec - on_time_us;
+	dbg_print("Thread:%x DutyCycle:%f ontime:%duS, idletime:%duS\n",
+			(unsigned int)pthread_self(),
+			duty_cycle, on_time_us, off_time_us);
 
 	/* monotonic clock initial reference. updated during power_shaping */
 	if (clock_gettime(CLOCK_MONOTONIC, &ps.last))
@@ -332,17 +326,17 @@ static void work_fn(void *data)
 
 			if (!start_pending) {
 				/* No work for cpu0 if it was just submitter */
-				if (((cpu_stress_opt != DONT_STRESS_CPU0)
-					|| (pr != 0)) && (cpu_work_exist)) {
+				if ((dont_stress_cpu0 || (pr != 0)) && cpu_work_exist) {
 					cpu_work(on_time_us);
 				}
 			}
 
-			if (chore_thread == pr) {
+			if (pr == 0) {
 				do_logging(&last_duty_cycle);
 				/* XXX: gfx, mem work */
 			}
 		}
+
 
 		if (exit_cpu_thread)
 			continue;
@@ -458,11 +452,6 @@ int main(int argc, char *argv[])
 	data_t data[nr_threads];
 	pthread_t thread[nr_threads];
 
-	if (pthread_mutex_init(&plock, NULL) != 0) {
-		printf("mutex init failed\n");
-		goto bail;
-	}
-
 	for (c = 0, i = 0; c < CPU_SETSIZE && i < MAX_CPU_REPORTS; c++) {
 		if (!CPU_ISSET(c, &cfg->cpumask))
 			continue;
@@ -534,7 +523,6 @@ int main(int argc, char *argv[])
 
 	pthread_attr_destroy(&attr_io);
 	pthread_join(io_thread, res);
-	pthread_mutex_destroy(&plock);
 	dbg_print("IO Thread cleaned\n");
 
 bail:

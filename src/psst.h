@@ -39,7 +39,8 @@ enum power_shape_name {
 	LINEAR_RAMP,
 	SAW_TOOTH,
 	GROWTH_CURVE,
-	DECAY_CURVE
+	DECAY_CURVE,
+	NONE
 };
 
 typedef union {

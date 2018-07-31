@@ -104,7 +104,7 @@ int populate_default_config(struct config *configp)
 			printf("can't stress cpu0 (-C xx) along with -G or -M\n");
 			return 0;
 		} else {
-			cpu_stress_opt = DONT_STRESS_CPU0;
+			dont_stress_cpu0 = 1;
 			CPU_SET(0, &configp->cpumask);
 		}
 	}
@@ -113,7 +113,7 @@ int populate_default_config(struct config *configp)
 	 * user intention as cpu_stress_opt reason.
 	 */
 	if (!CPU_ISSET(0, &configp->cpumask)) {
-		cpu_stress_opt = DONT_STRESS_CPU0;
+		dont_stress_cpu0 = 1;
 		CPU_SET(0, &configp->cpumask);
 	}
 	if (!configp->log_file_name[0]) {
@@ -213,6 +213,7 @@ static int populate_online_cpumask(cpu_set_t *cpumask)
 }
 
 cpu_stress_opt_t cpu_stress_opt = UNDEFINED;
+int dont_stress_cpu0;
 
 static int set_cpu_mask(char *buf, struct config *configp)
 {
@@ -221,7 +222,8 @@ static int set_cpu_mask(char *buf, struct config *configp)
 		/* user wants to: not stress any cpu.
 		 * lets translate that to cpu0 submitter work
 		 */
-		cpu_stress_opt = DONT_STRESS_CPU0;
+		dont_stress_cpu0 = 1;
+		cpu_stress_opt = WELL_DEFINED;
 		CPU_SET(0, &(configp->cpumask));
 		return 0;
 	}
@@ -247,7 +249,6 @@ static int set_cpu_mask(char *buf, struct config *configp)
 	return 0;
 }
 
-float Rmax, Rmin;
 int parse_cmd_config(int ac, char **av, struct config *configp)
 {
 	int c, option_index;
@@ -325,7 +326,7 @@ static void verbose_prints(struct config *configp)
 			printf("\tcpu %d", i);
 			if (i == 0)
 				printf("\t[%s]\n",
-				 (cpu_stress_opt == DONT_STRESS_CPU0) ?
+				 dont_stress_cpu0 ?
 				 "as work submitter" : "was online or chosen");
 			else
 				printf("\t[%s]\n", "was online or chosen");
