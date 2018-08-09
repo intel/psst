@@ -81,7 +81,7 @@ static void verbose_prints(struct config *configp);
 int populate_default_config(struct config *configp)
 {
 	if (!configp->shape_func[0])
-		strncpy(configp->shape_func, "single-step,0.1", 15);
+		strncpy(configp->shape_func, "single-step,0.1", 16);
 
 	if (!configp->v_unit)
 		configp->v_unit = 'C';
