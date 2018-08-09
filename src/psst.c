@@ -235,7 +235,7 @@ static void work_fn(void *data)
 	int tick_usec = DEFAULT_TICK_USEC;
 	int ret, on_time_us, off_time_us, pr;
 	int cpu_work_exist = 0;
-	float duty_cycle, last_duty_cycle;
+	float duty_cycle, last_duty_cycle = 0.0;
 	struct timespec ts;
 	static int start_ms;
 	ps_t ps;
