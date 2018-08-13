@@ -81,7 +81,7 @@ static void verbose_prints(struct config *configp);
 int populate_default_config(struct config *configp)
 {
 	if (!configp->shape_func[0])
-		strncpy(configp->shape_func, "single-step,0.1", 15);
+		strncpy(configp->shape_func, "single-step,0.1", 16);
 
 	if (!configp->v_unit)
 		configp->v_unit = 'C';
@@ -253,6 +253,7 @@ int parse_cmd_config(int ac, char **av, struct config *configp)
 {
 	int c, option_index;
 	char buf[128];
+	size_t len;
 
 	memset(configp, 0, sizeof(struct config));
 	CPU_ZERO(&configp->cpumask);
@@ -265,8 +266,9 @@ int parse_cmd_config(int ac, char **av, struct config *configp)
 		/* XXX check optarg valid */
 		switch (c) {
 		case 'l':
-			strncpy(configp->log_file_name, optarg,
-				sizeof(configp->log_file_name) - 1);
+			len = sizeof(configp->log_file_name);
+			strncpy(configp->log_file_name, optarg, len);
+			configp->log_file_name[len - 1] = '\0';
 			break;
 		case 'p':
 			sscanf(optarg, "%d", &configp->poll_period);
@@ -292,8 +294,9 @@ int parse_cmd_config(int ac, char **av, struct config *configp)
 			configp->version = 1;
 			break;
 		case 's':
-			strncpy(configp->shape_func, optarg,
-				sizeof(configp->shape_func));
+			len = sizeof(configp->shape_func);
+			strncpy(configp->shape_func, optarg, len);
+			configp->shape_func[len - 1] = '\0';
 			break;
 		case 'h':
 		case '?':
