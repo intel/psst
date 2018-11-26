@@ -290,7 +290,7 @@ void page_write_disk(void *confg)
 
 	ret = pthread_sigmask(SIG_BLOCK, &sigmask, NULL);
 	if (ret)
-		printf("page_write_disk: couldnt mask signals. err:%d\n", ret);
+		printf("page_write_disk: couldn't mask signals. err:%d\n", ret);
 
 	do {
 		int wr_sz;
