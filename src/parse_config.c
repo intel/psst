@@ -161,7 +161,10 @@ static int cpuset_to_bitmap(char *buf, cpu_set_t *cpumask)
 	int k;
 	char *token, *subtoken, *pos;
 	char *save1, *save2, *token_copy;
+
 	pos = strchr(buf, '\n');
+	if (!pos)
+		return 0;
 	pos[0] = '\0';
 	/* e.g:  3,5-11 */
 	token = strtok_r(buf, ",", &save1);

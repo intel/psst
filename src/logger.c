@@ -188,11 +188,12 @@ int find_path(char *base, char *node, char *match, char *replace, char *buf)
 			sz = read(fd, value, sizeof(value));
 			close(fd);
 		}
-		if (sz > 0)
+		if (sz > 0) {
 			value[sz - 1] = '\0';
-		if (strcmp(value, match) == 0) {
-			found = 1;
-			break;
+			if (strcmp(value, match) == 0) {
+				found = 1;
+				break;
+			}
 		}
 		token = strtok(NULL, "\n");
 	} while (token);
