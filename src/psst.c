@@ -82,7 +82,8 @@ int is_time_remaining(clockid_t clk, struct timespec *ts_last,
 		ts_later.tv_sec++;
 		ts_later.tv_nsec -= NSEC_PER_SEC;
 	}
-	clock_gettime(clk, &ts_now);
+	if (clock_gettime(clk, &ts_now))
+		perror("clock_gettime");
 	if (ts_compare(&ts_now, &ts_later) < 0)
 		return 1;
 	else
@@ -96,8 +97,8 @@ int timespec_to_msec(struct timespec *t)
 unsigned long clockdiff_now_ns(clockid_t clk,  struct timespec *ts_then)
 {
 	struct timespec ts_now;
-	clock_gettime(clk, &ts_now);
-
+	if (clock_gettime(clk, &ts_now))
+		perror("clock_gettime");
 	return diff_ns(ts_then, &ts_now);
 }
 
@@ -306,7 +307,8 @@ static void work_fn(void *data)
 		while (is_time_remaining(CLOCK_THREAD_CPUTIME_ID, &ts, 0,
 							on_time_us*1000)) {
 			if (timespec_to_msec(&ps.last) - start_ms < START_DELAY) {
-				clock_gettime(CLOCK_MONOTONIC, &ps.last);
+				if (clock_gettime(CLOCK_MONOTONIC, &ps.last))
+					perror("clock_gettime 3");
 				start_pending = 1;
 			} else {
 				start_pending = 0;
