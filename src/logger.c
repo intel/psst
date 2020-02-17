@@ -105,7 +105,7 @@ int count_tzone_paths(char *base, char *match)
 	int sz;
 	FILE *fp;
 	/* generally sufficient */
-	char cmd[512];
+	char cmd[MAX_LEN];
 	char result[8];
 
 	/* find ${base}* -name <name> 2>/dev/null*/
@@ -132,12 +132,12 @@ int get_node_name(char *base, char *node, char *result)
 {
 	int sz;
 	FILE *fp;
-	char path[512];
+	char path[MAX_LEN];
 
 	sprintf(path, "cat %s/%s 2>/dev/null", base, node);
 	fp = popen(path, "r");
 	if (!fp) {
-		perror("find_path()");
+		perror("get_node_name()");
 		dbg_print("popen failed. path %s\n", path);
 		return -1;
 	}
@@ -157,9 +157,9 @@ int get_node_name(char *base, char *node, char *result)
 
 int find_path(char *base, char *node, char *match, char *replace, char *buf)
 {
-	int sz, fd, found = 0;
+	int sz, replace_sz, fd, found = 0;
 	FILE *fp;
-	char value[64], path[512];
+	char value[64], path[MAX_LEN];
 	char list[2048] = {0};
 	char *token, *loc;
 
@@ -207,9 +207,10 @@ int find_path(char *base, char *node, char *match, char *replace, char *buf)
 
 	sz = loc - token;
 	strncpy(buf, token, sz);
-	strncpy(buf+sz, replace, strlen(replace));
+	replace_sz = strnlen(replace, MAX_LEN-sz-1);
+	strncpy(buf+sz, replace, replace_sz);
 
-	buf[sz + strlen(replace)] = '\0';
+	buf[sz + replace_sz] = '\0';
 	return 0;
 }
 
@@ -331,7 +332,7 @@ int need_maxed_cpu;
 void initialize_logger(void)
 {
 	int i;
-	char path[256] = "";
+	char path[MAX_LEN] = "";
 
 	for (i = 0; i < MAX_COL_NUM; i++) {
 		if (!col_desc[i].report_enabled) {

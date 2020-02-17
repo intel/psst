@@ -27,6 +27,7 @@
 #include "psst.h"
 #include "logger.h"
 
+#define MAX_LEN 512
 #define BASE_PATH_RAPL \
 	"/sys/devices/virtual/powercap/intel-rapl/intel-rapl"
 #define BASE_PATH_TZONE "/sys/devices/virtual/thermal/thermal_zone"
