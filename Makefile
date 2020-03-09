@@ -1,4 +1,4 @@
-VERSION = 0.1
+VERSION = 1.0
 
 BINDIR = /usr/bin
 MANDIR = /usr/share/man/man1

@@ -520,7 +520,7 @@ int update_perf_diffs(unsigned int *aperf_diff, unsigned int *mperf_diff,
 
 int first_log = 1;
 uint64_t pp0_initial_energy, soc_initial_energy[4];
-unsigned int pp0_diff_uj, soc_diff_uj[4];
+uint64_t pp0_diff_uj, soc_diff_uj[4];
 
 int rapl_pp0_supported;
 

@@ -228,7 +228,7 @@ int power_shaping(ps_t *ps, float *v_unit)
 
 #define START_DELAY 0
 
-unsigned int pp0_diff_uj, soc_diff_uj;
+uint64_t pp0_diff_uj, soc_diff_uj;
 static void work_fn(void *data)
 {
 	int i = 0;
