@@ -63,6 +63,8 @@ struct log_col_desc {
 	float value;
 };
 
+extern uint64_t pp0_diff_uj, soc_diff_uj[4];
+extern int exit_cpu_thread, exit_io_thread;
 extern int rapl_pp0_supported;
 extern int need_maxed_cpu;
 extern int plog_poll_sec, plog_poll_nsec, duration_sec, duration_nsec;

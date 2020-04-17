@@ -44,7 +44,6 @@ void print_version(void)
 	printf("psst version %s\n", VERSION);
 }
 
-int exit_cpu_thread, exit_io_thread;
 static int nr_threads;
 
 /*
@@ -228,7 +227,6 @@ int power_shaping(ps_t *ps, float *v_unit)
 
 #define START_DELAY 0
 
-uint64_t pp0_diff_uj, soc_diff_uj;
 static void work_fn(void *data)
 {
 	int i = 0;
@@ -361,12 +359,12 @@ static void work_fn(void *data)
 		printf("\nDuration: %d ms. poll: %d ms. samples: %d\n",
 					    time_ms, configpv.poll_period, N);
 		if (rapl_pp0_supported) {
-			soc_r_avg = (float)(soc_diff_uj)/(time_ms*1000);
+			soc_r_avg = (float)(soc_diff_uj[0])/(time_ms*1000);
 			pp0_r_avg = (float)(pp0_diff_uj)/(time_ms*1000);
 			printf("Applicable to SOC\n");
 			printf("\tAvg soc power: %.3f W\n", soc_r_avg);
 			printf("\tEnergy consumed (soc): %.3f mJ\n",
-						 (float)soc_diff_uj/1000);
+						 (float)soc_diff_uj[0]/1000);
 			printf("Applicable to CPU\n");
 
 			printf("\tAvg cpu power: %.3f W\n", pp0_r_avg);
@@ -396,7 +394,6 @@ static void psst_signal_handler(int sig)
 }
 
 int dev_msr_fd[MAX_CPU_REPORTS];
-int dev_msr_supported;
 
 int main(int argc, char *argv[])
 {

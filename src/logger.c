@@ -616,7 +616,7 @@ void do_logging(float *duty_cycle)
 			break;
 
 		case PKG1_POWER_RAPL:
-			pkg_num = i - PKG1_POWER_RAPL;
+			pkg_num = i - PKG0_POWER_RAPL;
 			if (first_log)
 				soc_initial_energy[pkg_num] = atoll(buf);
 
@@ -626,7 +626,7 @@ void do_logging(float *duty_cycle)
 						configpv.poll_period;
 			break;
 		case PKG2_POWER_RAPL:
-			pkg_num = i - PKG2_POWER_RAPL;
+			pkg_num = i - PKG0_POWER_RAPL;
 			if (first_log)
 				soc_initial_energy[pkg_num] = atoll(buf);
 
@@ -636,7 +636,7 @@ void do_logging(float *duty_cycle)
 						configpv.poll_period;
 			break;
 		case PKG3_POWER_RAPL:
-			pkg_num = i - PKG3_POWER_RAPL;
+			pkg_num = i - PKG0_POWER_RAPL;
 			if (first_log)
 				soc_initial_energy[pkg_num] = atoll(buf);
 
