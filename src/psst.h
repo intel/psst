@@ -98,6 +98,7 @@ typedef struct {
         uint64_t mperf_diff;
         uint64_t pperf_diff;
         uint64_t tsc_diff;
+        uint64_t nperf;
 } perf_stats_t;
 
 extern int is_time_remaining(clockid_t, struct timespec *, int, int);

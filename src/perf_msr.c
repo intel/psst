@@ -27,7 +27,7 @@ uint64_t read_msr(int fd, uint32_t reg)
 {
 	uint64_t data;
 	if (pread(fd, &data, sizeof(data), reg) != sizeof(data)) {
-		perror("rdmsr" );
+		dbg_print("rdmsr fail on fd:%d\n", fd);
 		return -1;
 	}
 	return data;

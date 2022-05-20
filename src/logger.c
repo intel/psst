@@ -52,13 +52,13 @@ struct log_col_desc col_desc[] = {
 	/* TIME_STAMP_MS: time stamp in millisec */
 	INIT_COL(1, Time, [ms], 9.0, 1, NO_FD, 0),
 	/* FREQ_REALIZED: average frequency (cpu0) since last poll */
-	INIT_COL(1, FreqReal, [MHz], 8.2, 1, MSR_FD, 0),
+	INIT_COL(1, Freq, [MHz], 8.2, 1, MSR_FD, 0),
 	/* MAX_FREQ_CPU: smp cpu that delivered max freq in last sample */
 	INIT_COL(1, MxdCpu, [#], 5.0, 1, NO_FD, 0),
 	/* LOAD_REQUEST: cpu overhead requested by this program */
-	INIT_COL(1, LoadIn, [C0_%], 6.2, 1, NO_FD, 0),
+	INIT_COL(1, LoadRq, [C0_%], 6.2, 1, NO_FD, 0),
 	/* LOAD_REALIZED: actual overall cpu overhead in the system */
-	INIT_COL(1, LoadOut, [C0_%], 7.2, 1, MSR_FD, 0),
+	INIT_COL(1, Load, [C0_%], 7.2, 1, MSR_FD, 0),
 	/* SCALE_FACTOR: workload scaling factor on a cpu */
 	INIT_COL(1, ScaleF, [%], 7.2, 1, MSR_FD, 0),
 	/* Normalized productive perf */
@@ -493,6 +493,7 @@ int update_perf_diffs(float *sum_norm_perf, int need_maxed_cpu)
 			nperf = (float) perf_stats[t].pperf_diff/poll_cpu_us;
 			nperf = (float) nperf * perf_stats[t].tsc_diff;
 			nperf = (float) nperf/(perf_stats[t].mperf_diff);
+			perf_stats[t].nperf = (uint64_t)nperf;
 			_sum_nperf += (float) nperf;
 		}
 	}
@@ -538,9 +539,10 @@ int rapl_pp0_supported;
 void do_logging(float dc)
 {
 	char buf[64];
-	char final_buf[512];
+	char final_buf[1024];
 	char val_fmt[16];
-	char delim[] = ",     ";
+	char delim[] = ",\t  ";
+	char delim_short[] = ",\t";
 	log_col_t i;
 	int sz, sz1, pkg_num;
 	unsigned int m = 0;
@@ -697,9 +699,9 @@ void do_logging(float dc)
 			perror("Failed to malloc log_header");
 			exit(EXIT_FAILURE);
 		}
-		char hdr_fmt[16];
-		int dash_len;
+		char hdr_fmt[32];
 
+		/* add header names */
 		sprintf(log_header, "%c", '#');
 		sz = 1;
 		for (i = 0; i < MAX_COL_NUM; i++) {
@@ -711,10 +713,32 @@ void do_logging(float dc)
 					col_desc[i].header_name);
 			sz += sz1;
 		}
-		dash_len = sz;
-		sz = sz - sizeof(delim) + 2;
+
+		if (configpv.super_verbose && col_desc[LOAD_REALIZED].report_enabled) {
+			i = NORM_PERF;
+			for (int j = 0; j < nr_threads; j++) {
+				sprintf(hdr_fmt, "%%%ds%.2d%s",
+						atoi(col_desc[i].fmt), j, delim_short);
+				sz1 = sprintf(log_header + sz, hdr_fmt,
+						col_desc[i].header_name);
+				sz += sz1;
+			}
+			i = LOAD_REALIZED;
+			for (int j = 0; j < nr_threads; j++) {
+				sprintf(hdr_fmt, "%%%ds%.2d%s",
+						atoi(col_desc[i].fmt), j, delim_short);
+				sz1 = sprintf(log_header + sz, hdr_fmt,
+						col_desc[i].header_name);
+				sz += sz1;
+			}
+			sz = sz - sizeof(delim_short) + 2;
+		} else {
+			sz = sz - sizeof(delim) + 2;
+		}
+
 		log_header[sz - 1] = '\n';
 
+		/* add header unit of measurement */
 		sprintf(log_header+sz, "%c", '#');
 		sz += 1;
 		for (i = 0; i < MAX_COL_NUM; i++) {
@@ -726,24 +750,37 @@ void do_logging(float dc)
 						col_desc[i].unit);
 			sz += sz1;
 		}
-		sz = sz - sizeof(delim) + 2;
-		log_header[sz - 1] = '\n';
-		sprintf(log_header+sz, "%c", '#');
-		sz += 1;
-		for (i = 0; i < dash_len; i++) {
-			sz1 = sprintf(log_header + sz, "%c", '-');
-			sz += sz1;
+		if (configpv.super_verbose && col_desc[LOAD_REALIZED].report_enabled) {
+			i = NORM_PERF;
+			for (int j = 0; j < nr_threads; j++) {
+				/* add 2 digits for cpu# */
+				sprintf(hdr_fmt, "%%%ds%s",
+						atoi(col_desc[i].fmt)+2, delim_short);
+				sz1 = sprintf(log_header + sz, hdr_fmt,
+							col_desc[i].unit);
+				sz += sz1;
+			}
+			i = LOAD_REALIZED;
+			for (int j = 0; j < nr_threads; j++) {
+				sprintf(hdr_fmt, "%%%ds%s",
+						atoi(col_desc[i].fmt)+2, delim_short);
+				sz1 = sprintf(log_header + sz, hdr_fmt,
+							col_desc[i].unit);
+				sz += sz1;
+			}
+			sz = sz - sizeof(delim_short) + 2;
+		} else {
+			sz = sz - sizeof(delim) + 2;
 		}
-		sz = sz - sizeof(delim) + 2;
 		log_header[sz - 1] = '\n';
-		log_header[sz] = '\0';
 
+		/* write-out to file */
 		sz = write(configpv.log_file_fd, log_header, sz);
 		if (sz == -1)
 			perror("log_header write");
 
 		printf("report being logged to %s... ^C to exit.\n", configpv.log_file_name);
-		if (configpv.verbose)
+		if (configpv.verbose & !configpv.super_verbose)
 			printf("%s\n", log_header);
 	}
 
@@ -756,12 +793,31 @@ void do_logging(float dc)
 						col_desc[i].value);
 		sz += sz1;
 	}
+
+	if (configpv.super_verbose && col_desc[LOAD_REALIZED].report_enabled) {
+		int sz2;
+		i = NORM_PERF;
+		for (int j = 0; j < nr_threads; j++) {
+			sprintf(val_fmt, "%%%.3sf%s", col_desc[i].fmt, delim);
+			sz2 = sprintf(final_buf+sz, val_fmt, (float)perf_stats[j].nperf);
+			sz += sz2;
+		}
+
+		i = LOAD_REALIZED;
+		for (int j = 0; j < nr_threads; j++) {
+			sprintf(val_fmt, "%%%.3sf%s", col_desc[i].fmt, delim);
+			sz2 = sprintf(final_buf+sz, val_fmt, (float)perf_stats[j].mperf_diff
+					*100/perf_stats[j].tsc_diff);
+			sz += sz2;
+		}
+	}
+
 	/* erase the last delimiter */
 	sz = sz - sizeof(delim) + 2;
 	final_buf[sz-1] = '\n';
 	final_buf[sz] = '\0';
 
-	if (configpv.verbose)
+	if (configpv.verbose & !configpv.super_verbose)
 		printf("%s", final_buf);
 
 	accumulate_flush_record(final_buf, sz+1);

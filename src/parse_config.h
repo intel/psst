@@ -51,6 +51,7 @@ struct config {
 	unsigned int memmask;
 	unsigned int cpu_freq;
 	unsigned int verbose;
+	unsigned int super_verbose;
 	unsigned int version;
 	char log_file_name[80];
 	unsigned int log_file_fd;

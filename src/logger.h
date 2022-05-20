@@ -30,9 +30,6 @@
 #define MSEC_TO_SEC(x) (x/1000)
 #define REMAINING_MS_TO_NS(x) ((x % 1000) * 1000000)
 
-#define SMP_MAX_FREQ_ENABLED 1
-#define MAX_CPU_REPORTS (4 * SMP_MAX_FREQ_ENABLED)
-
 typedef enum log_col {TIME_STAMP_MS,
 		      FREQ_REALIZED,
 		      MAX_FREQ_CPU,
