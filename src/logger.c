@@ -522,7 +522,7 @@ int update_perf_diffs(float *sum_norm_perf, int need_maxed_cpu)
 			continue;
 		else {
 			max_load = next_max_load;
-			maxed_cpu = t;
+			maxed_cpu = perf_stats[t].cpu;
 		}
 	}
 
@@ -718,7 +718,7 @@ void do_logging(float dc)
 			i = NORM_PERF;
 			for (int j = 0; j < nr_threads; j++) {
 				sprintf(hdr_fmt, "%%%ds%.2d%s",
-						atoi(col_desc[i].fmt), j, delim_short);
+					atoi(col_desc[i].fmt), perf_stats[j].cpu, delim_short);
 				sz1 = sprintf(log_header + sz, hdr_fmt,
 						col_desc[i].header_name);
 				sz += sz1;
@@ -726,7 +726,7 @@ void do_logging(float dc)
 			i = LOAD_REALIZED;
 			for (int j = 0; j < nr_threads; j++) {
 				sprintf(hdr_fmt, "%%%ds%.2d%s",
-						atoi(col_desc[i].fmt), j, delim_short);
+					atoi(col_desc[i].fmt), perf_stats[j].cpu, delim_short);
 				sz1 = sprintf(log_header + sz, hdr_fmt,
 						col_desc[i].header_name);
 				sz += sz1;

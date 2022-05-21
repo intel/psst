@@ -92,6 +92,7 @@ typedef struct {
 } perf_t;
 
 typedef struct {
+        int cpu;
         int dev_msr_fd;
         int dev_msr_supported;
         uint64_t aperf_diff;

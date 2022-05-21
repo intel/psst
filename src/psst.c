@@ -476,6 +476,7 @@ int main(int argc, char *argv[])
 			printf("*** No /dev/cpu%d/msr. check CONFIG_X86_MSR support ***\n\n", c);
 			break;
 		} else {
+			perf_stats[t].cpu = c;
 			perf_stats[t].dev_msr_fd = ret;
 			perf_stats[t].dev_msr_supported = 1;
 		}
