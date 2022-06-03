@@ -17,6 +17,7 @@
 #define _LOGGER_H_
 #include <stdint.h>
 #include <time.h>
+#include "psst.h"
 
 #ifdef DEBUG
 #define dbg_print(fmt...)  printf(fmt)
@@ -38,6 +39,7 @@ typedef enum log_col {TIME_STAMP_MS,
 		      LOAD_REQUEST,
 		      LOAD_REALIZED,
 		      SCALE_FACTOR,
+		      NORM_PERF,
 		      PKG0_POWER_RAPL,
 		      PKG1_POWER_RAPL,
 		      PKG2_POWER_RAPL,
@@ -63,19 +65,18 @@ struct log_col_desc {
 	float value;
 };
 
-extern uint64_t pp0_diff_uj, soc_diff_uj[4];
-extern int exit_cpu_thread, exit_io_thread;
+extern int nr_threads;
 extern int rapl_pp0_supported;
 extern int need_maxed_cpu;
 extern int plog_poll_sec, plog_poll_nsec, duration_sec, duration_nsec;
 extern struct config configpv;
+extern perf_stats_t *perf_stats;
 
-extern void do_logging(float *);
+extern void do_logging(float dc);
 extern void initialize_logger(void);
 extern void initialize_log_clock(void);
 extern void page_write_disk(void *);
 extern void trigger_disk_io(void);
 extern uint64_t diff_ns(struct timespec *, struct timespec *);
-extern int update_perf_diffs(unsigned int *a, unsigned int *m, unsigned int *p,
-			     unsigned int *t, int max);
+extern int update_perf_diffs(float *s, int max);
 #endif

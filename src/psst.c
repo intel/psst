@@ -44,7 +44,7 @@ void print_version(void)
 	printf("psst version %s\n", VERSION);
 }
 
-static int nr_threads;
+int nr_threads;
 
 /*
  * Any additional stress function goes here.
@@ -229,14 +229,14 @@ int power_shaping(ps_t *ps, float *v_unit)
 
 static void work_fn(void *data)
 {
-	int i = 0;
 	int start_pending = 0;
 	int tick_usec = DEFAULT_TICK_USEC;
 	int ret, on_time_us, off_time_us, pr;
 	int cpu_work_exist = 0;
-	float duty_cycle, last_duty_cycle = 0.0;
+	float duty_cycle;
 	struct timespec ts;
 	static int start_ms;
+	data_t *data_ptr = (data_t*)data;
 	ps_t ps;
 
 	sigset_t maskset;
@@ -245,10 +245,10 @@ static void work_fn(void *data)
 	if (ret)
 		printf("Couldn't mask signals in work_fn. err:%d\n", ret);
 
-	duty_cycle = ((data_t *)data)->duty;
-	pr = ((data_t *)data)->affinity_pr;
-	ps.psn = ((data_t *)data)->psn;
-	ps.psa = ((data_t *)data)->psa;
+	duty_cycle = data_ptr->duty_cycle;
+	pr = data_ptr->affinity_pr;
+	ps.psn = data_ptr->psn;
+	ps.psa = data_ptr->psa;
 
 	/*
 	 * if this thread is launched for non-cpu work (e,g gpu work requestor)
@@ -278,9 +278,6 @@ static void work_fn(void *data)
 		dbg_print("thread %d sec: %d nsec %d\n",
 				pr, duration_sec, duration_nsec);
 		initialize_log_clock();
-		unsigned int dummy;
-	        if (dev_msr_supported)
-			dummy = update_perf_diffs(&dummy, &dummy, &dummy, &dummy, 0);
 		if (dont_stress_cpu0) {
 			duty_cycle = MIN_LOAD;
 			ps.psn = NONE;
@@ -299,7 +296,7 @@ static void work_fn(void *data)
 
 	start_ms = timespec_to_msec(&ps.last);
 
-	for (i = 0; (!exit_cpu_thread && cpu_work_exist); i++) {
+	do {
 		if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts))
 			perror("clock_gettime 2");
 		while (is_time_remaining(CLOCK_THREAD_CPUTIME_ID, &ts, 0,
@@ -317,7 +314,7 @@ static void work_fn(void *data)
 				 * add as much work as required in this loop.
 				 * it will be accounted for good.
 				 */
-				last_duty_cycle = duty_cycle;
+				data_ptr->duty_cycle = duty_cycle;
 				if (power_shaping(&ps, &duty_cycle)) {
 					on_time_us = tick_usec * duty_cycle/100;
 					off_time_us = tick_usec - on_time_us;
@@ -332,11 +329,10 @@ static void work_fn(void *data)
 			}
 
 			if (pr == 0) {
-				do_logging(&last_duty_cycle);
+				do_logging(duty_cycle);
 				/* XXX: gfx, mem work */
 			}
 		}
-
 
 		if (exit_cpu_thread)
 			continue;
@@ -344,7 +340,7 @@ static void work_fn(void *data)
 		ts.tv_sec = 0;
 		ts.tv_nsec = off_time_us * 1000;
 		nanosleep(&ts, NULL);
-	}
+	} while(!exit_cpu_thread && cpu_work_exist);
 
 	/* report out energy index details before exit */
 	int N;
@@ -393,12 +389,14 @@ static void psst_signal_handler(int sig)
 	}
 }
 
-int dev_msr_fd[MAX_CPU_REPORTS];
+static pthread_t *thread_ptr;
+static data_t *data_ptr;
+perf_stats_t *perf_stats;
 
 int main(int argc, char *argv[])
 {
-	int c, i = 0, t = 0, duty, ret;
-	static void *res;
+	int c, t = 0, duty, ret;
+	void *res;
 	data_t *pst;
 	struct config *cfg;
 
@@ -446,26 +444,44 @@ int main(int argc, char *argv[])
 	}
 
 	/* default/starting duty cycle */
-	duty = 0;
+	duty = 1;
 	nr_threads = CPU_COUNT(&cfg->cpumask);
-	data_t data[nr_threads];
-	pthread_t thread[nr_threads];
 
-	for (c = 0, i = 0; c < CPU_SETSIZE && i < MAX_CPU_REPORTS; c++) {
+	if (!init_delta_vars(nr_threads)){
+		exit(EXIT_FAILURE);
+	}
+
+	thread_ptr = malloc(sizeof(pthread_t) * nr_threads);
+	if (!thread_ptr) {
+		perror("malloc thread_ptr");
+		goto bail;
+	}
+	data_ptr = malloc(sizeof(data_t) * nr_threads);
+	if (!data_ptr) {
+		perror("malloc data_ptr");
+		goto bail;
+	}
+	perf_stats = malloc(sizeof(perf_stats_t) * nr_threads);
+	if (!perf_stats) {
+		perror("malloc perf_stat");
+		goto bail;
+	}
+
+	for (c = 0, t = 0; c < CPU_SETSIZE && t < nr_threads; c++) {
 		if (!CPU_ISSET(c, &cfg->cpumask))
 			continue;
 		ret = initialize_dev_msr(c);
 		if (ret < 0) {
-			dev_msr_supported = 0;
+			perf_stats[t].dev_msr_supported = 0;
 			printf("*** No /dev/cpu%d/msr. check CONFIG_X86_MSR support ***\n\n", c);
 			break;
 		} else {
-			dev_msr_fd[i] = ret;
-			dev_msr_supported = 1;
+			perf_stats[t].dev_msr_fd = ret;
+			perf_stats[t].dev_msr_supported = 1;
 		}
-		i++;
+		t++;
 	}
-	initialize_cpu_khz(dev_msr_fd[0]);
+	initialize_cpu_hfm_mhz(perf_stats[0].dev_msr_fd);
 
 	/* thread for deferred disk IO of logs */
 	if (pthread_create(&io_thread, &attr_io,
@@ -486,16 +502,16 @@ int main(int argc, char *argv[])
 
 	pthread_attr_setdetachstate(&attr_t, PTHREAD_CREATE_JOINABLE);
 	/* fork pthreads for each logical cpu selected & set affinity to cpu. */
-	for (c = 0; c < CPU_SETSIZE; c++) {
+	for (c = 0, t = 0; c < CPU_SETSIZE && t < nr_threads; c++) {
 		if (!CPU_ISSET(c, &cfg->cpumask))
 			continue;
-		data[t].duty = duty;
+		data_ptr[t].duty_cycle = duty;
 		/* setaffinity to specific processor */
-		data[t].affinity_pr = c;
-		data[t].psn = pst->psn;
-		data[t].psa = pst->psa;
-		ret = pthread_create(&thread[t], &attr_t, (void *)&work_fn,
-							(void *)&data[t]);
+		data_ptr[t].affinity_pr = c;
+		data_ptr[t].psn = pst->psn;
+		data_ptr[t].psa = pst->psa;
+		ret = pthread_create(&thread_ptr[t], &attr_t, (void *)&work_fn,
+							(void *)&data_ptr[t]);
 		if (ret) {
 			perror("Failed pthread create");
 			goto bail;
@@ -510,18 +526,17 @@ int main(int argc, char *argv[])
 	pthread_attr_destroy(&attr_t);
 	dbg_print("Created %d Thread + 1 io thread\n", t);
 	while (0 < t--) {
-		pthread_join(thread[t], res);
+		pthread_join(thread_ptr[t], &res);
+		close(perf_stats[t].dev_msr_fd);
 		dbg_print("Thread %d cleaned\n", t);
 	}
-	for (i = 0; i < MAX_CPU_REPORTS; i++)
-		close(dev_msr_fd[i]);
 
 	/* we exit the logger thread above. time to flush any remaining data */
 	exit_io_thread = 1;
 	trigger_disk_io();
 
 	pthread_attr_destroy(&attr_io);
-	pthread_join(io_thread, res);
+	pthread_join(io_thread, &res);
 	dbg_print("IO Thread cleaned\n");
 
 bail:

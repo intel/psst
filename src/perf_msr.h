@@ -26,14 +26,13 @@
 #define MSR_PLATFORM_INFO	0xce
 #define MSR_PERF_STATUS		0x198
 
-extern int cpu_khz;
-extern int dev_msr_fd[MAX_CPU_REPORTS];
-extern int dev_msr_supported;
+extern int cpu_hfm_mhz;
 extern uint64_t read_msr(int, uint32_t);
 extern int initialize_dev_msr(int c);
-extern int initialize_cpu_khz(int fd);
-extern unsigned int cpu_get_diff_aperf(uint64_t a, int i);
-extern unsigned int cpu_get_diff_mperf(uint64_t m, int i);
-extern unsigned int cpu_get_diff_pperf(uint64_t p, int i);
-extern unsigned int get_diff_tsc(uint64_t t);
+extern int initialize_cpu_hfm_mhz(int fd);
+extern int init_delta_vars(int n);
+extern uint64_t cpu_get_diff_aperf(uint64_t a, int i);
+extern uint64_t cpu_get_diff_mperf(uint64_t m, int i);
+extern uint64_t cpu_get_diff_pperf(uint64_t p, int i);
+extern uint64_t cpu_get_diff_tsc(uint64_t t, int i);
 #endif

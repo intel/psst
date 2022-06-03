@@ -15,6 +15,7 @@
 
 #ifndef _PSST_H_
 #define _PSST_H_
+#include <stdint.h>
 
 #define MSEC_PER_SEC (1000)
 #define USEC_PER_SEC (1000000)
@@ -79,7 +80,7 @@ typedef struct {
 } ps_t;
 
 typedef struct {
-	float duty;
+	float duty_cycle;
 	int affinity_pr;
 	enum power_shape_name psn;
 	power_shape_attr_t psa;
@@ -90,7 +91,18 @@ typedef struct {
 	struct timespec ts;
 } perf_t;
 
+typedef struct {
+        int dev_msr_fd;
+        int dev_msr_supported;
+        uint64_t aperf_diff;
+        uint64_t mperf_diff;
+        uint64_t pperf_diff;
+        uint64_t tsc_diff;
+} perf_stats_t;
+
 extern int is_time_remaining(clockid_t, struct timespec *, int, int);
 extern unsigned int *perf_time;
+extern uint64_t pp0_diff_uj, soc_diff_uj[4];
+extern int exit_cpu_thread, exit_io_thread;
 
 #endif

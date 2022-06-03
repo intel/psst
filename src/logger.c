@@ -17,6 +17,7 @@
 
 #define _GNU_SOURCE
 #include <getopt.h>
+#define _POSIX_C_SOURCE 200809L
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +26,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "psst.h"
 #include "logger.h"
 #include "rapl.h"
 #include "perf_msr.h"
@@ -50,7 +52,7 @@ struct log_col_desc col_desc[] = {
 	/* TIME_STAMP_MS: time stamp in millisec */
 	INIT_COL(1, Time, [ms], 9.0, 1, NO_FD, 0),
 	/* FREQ_REALIZED: average frequency (cpu0) since last poll */
-	INIT_COL(1, FreqReal, [MHz], 8.0, 0.1, MSR_FD, 0),
+	INIT_COL(1, FreqReal, [MHz], 8.2, 1, MSR_FD, 0),
 	/* MAX_FREQ_CPU: smp cpu that delivered max freq in last sample */
 	INIT_COL(1, MxdCpu, [#], 5.0, 1, NO_FD, 0),
 	/* LOAD_REQUEST: cpu overhead requested by this program */
@@ -59,6 +61,8 @@ struct log_col_desc col_desc[] = {
 	INIT_COL(1, LoadOut, [C0_%], 7.2, 1, MSR_FD, 0),
 	/* SCALE_FACTOR: workload scaling factor on a cpu */
 	INIT_COL(1, ScaleF, [%], 7.2, 1, MSR_FD, 0),
+	/* Normalized productive perf */
+	INIT_COL(1, Qperf, [perf/uS], 9.2, 1, MSR_FD, 0),
 	/* PKG_POWER_RAPL: sysfs rapl power package scope. */
 	INIT_COL(1, pwrPkg0, [mWatt], 8.2, 1, NORMAL_FD, 0),
 	INIT_COL(1, pwrPkg1, [mWatt], 8.2, 1, NORMAL_FD, 0),
@@ -345,6 +349,7 @@ void initialize_logger(void)
 		case FREQ_REALIZED:
 		case LOAD_REALIZED:
 		case SCALE_FACTOR:
+		case NORM_PERF:
 		/* XXX: for gfx C0, create separate columns */
 			if (get_node_name("/dev/cpu/0", "msr", NULL) < 0) {
 				col_desc[i].report_enabled = 0;
@@ -451,41 +456,49 @@ uint64_t diff_ns(struct timespec *ts_then, struct timespec *ts_now)
 	return diff;
 }
 
-int update_perf_diffs(unsigned int *aperf_diff, unsigned int *mperf_diff,
-		      unsigned int *pperf_diff, unsigned int *tsc_diff,
-		      int need_maxed_cpu)
+int update_perf_diffs(float *sum_norm_perf, int need_maxed_cpu)
 {
-	int fd, maxed_cpu, c, i, max_load, next_max_load;
-	uint64_t aperf_raw, mperf_raw, pperf_raw, tsc_raw;
-	unsigned int a_diff[MAX_CPU_REPORTS] = { 0 },
-		     m_diff[MAX_CPU_REPORTS] = { 0 },
-		     p_diff[MAX_CPU_REPORTS] = { 0 };
+	int fd, maxed_cpu, max_load, next_max_load;
+	float _sum_nperf = 0, nperf = 0;
+	uint64_t aperf_raw, mperf_raw, pperf_raw, tsc_raw, poll_cpu_us;
 
-	tsc_raw = read_msr(dev_msr_fd[0], (uint32_t)MSR_IA32_TSC);
-	*tsc_diff = get_diff_tsc(tsc_raw);
+	for (int t = 0; t < nr_threads; t++) {
+		fd = perf_stats[t].dev_msr_fd;
 
-	for (c = 0, i = 0; c < CPU_SETSIZE && i < MAX_CPU_REPORTS; c++) {
-		if (!CPU_ISSET(c, &configpv.cpumask))
-			continue;
-		/* simple to log for cpu0 */
-		fd = dev_msr_fd[i];
-
+		/*
+		 * XXX: per-cpu IPI wakes for msr read will cost power. Need to
+		 * skip poll for idle bound cpus (e.g, using C-state count).
+		 * note: all-core sum perf considers per-respective poll time
+		 */
+		pperf_raw = read_msr(fd, (uint32_t)MSR_IA32_PPERF);
 		aperf_raw = read_msr(fd, (uint32_t)MSR_IA32_APERF);
 		mperf_raw = read_msr(fd, (uint32_t)MSR_IA32_MPERF);
-		pperf_raw = read_msr(fd, (uint32_t)MSR_IA32_PPERF);
+		tsc_raw = read_msr(fd, (uint32_t)MSR_IA32_TSC);
 
-		a_diff[i] = cpu_get_diff_aperf(aperf_raw, i);
-		m_diff[i] = cpu_get_diff_mperf(mperf_raw, i);
-		p_diff[i] = cpu_get_diff_pperf(pperf_raw, i);
+		perf_stats[t].pperf_diff = cpu_get_diff_pperf(pperf_raw, t);
+		perf_stats[t].aperf_diff = cpu_get_diff_aperf(aperf_raw, t);
+		perf_stats[t].mperf_diff = cpu_get_diff_mperf(mperf_raw, t);
+		perf_stats[t].tsc_diff = cpu_get_diff_tsc(tsc_raw, t);
 
-		m_diff[i] = m_diff[i] == 0 ? 1 : m_diff[i];
-		i++;
+		poll_cpu_us = perf_stats[t].tsc_diff/cpu_hfm_mhz;
 
+		/*
+		 * Normalized perf metric defined as pperf per load per time.
+		 * The rationale is detailed in the followingi paper:
+		 * github.com/intel/psst >whitepapers >Generic_perf_per_watt.pdf
+		 * Given that delta_load = delta_mperf/delta_tsc, we can rewrite
+		 * as given below.
+		 */
+		if (perf_stats[t].mperf_diff) {
+			nperf = (float) perf_stats[t].pperf_diff/poll_cpu_us;
+			nperf = (float) nperf * perf_stats[t].tsc_diff;
+			nperf = (float) nperf/(perf_stats[t].mperf_diff);
+			_sum_nperf += (float) nperf;
+		}
 	}
+	*sum_norm_perf = _sum_nperf;
+
 	if (!need_maxed_cpu) {
-		*aperf_diff = a_diff[0];
-		*mperf_diff = m_diff[0];
-		*pperf_diff = p_diff[0];
 		return 0;
 	}
 
@@ -497,26 +510,24 @@ int update_perf_diffs(unsigned int *aperf_diff, unsigned int *mperf_diff,
 	 * This however assumes that governance has freq as monotonically 
 	 * proportional to load. 
 	 */
-	max_load = 100*m_diff[0]/(*tsc_diff);
+	max_load = 100*(float)perf_stats[0].mperf_diff/perf_stats[0].tsc_diff;
 	maxed_cpu = 0;
-	while (--i) {
-		next_max_load = 100*m_diff[i]/(*tsc_diff);
+
+	 for (int t = 1; t < nr_threads; t++) {
+		next_max_load = 100 * (float) perf_stats[t].mperf_diff /
+						perf_stats[t].tsc_diff;
 
 		if (max_load >= next_max_load)
 			continue;
 		else {
 			max_load = next_max_load;
-			maxed_cpu = i;
+			maxed_cpu = t;
 		}
 	}
 
-	*aperf_diff = a_diff[maxed_cpu];
-	*mperf_diff = m_diff[maxed_cpu];
-	*pperf_diff = p_diff[maxed_cpu];
-
 	return maxed_cpu;
 }
-#define LOG_HEADER_SZ 1024
+#define LOG_HEADER_SZ 2048
 
 int first_log = 1;
 uint64_t pp0_initial_energy, soc_initial_energy[4];
@@ -524,7 +535,7 @@ uint64_t pp0_diff_uj, soc_diff_uj[4];
 
 int rapl_pp0_supported;
 
-void do_logging(float *duty_cycle)
+void do_logging(float dc)
 {
 	char buf[64];
 	char final_buf[512];
@@ -532,12 +543,8 @@ void do_logging(float *duty_cycle)
 	char delim[] = ",     ";
 	log_col_t i;
 	int sz, sz1, pkg_num;
-	/* diff init values are only to quiesce static analysers */
-	unsigned int aperf_diff = 1;
-	unsigned int mperf_diff = 1;
-	unsigned int pperf_diff = 1;
-	unsigned int tsc_diff = 1;
-	unsigned int maxed_cpu = 0;
+	unsigned int m = 0;
+	float sum_norm_perf = 0;
 	struct timespec tm;
 
 	*buf = '\0';
@@ -553,6 +560,7 @@ void do_logging(float *duty_cycle)
 	if (!first_log && is_time_remaining(CLOCK_MONOTONIC, &plog_last_tm,
 					plog_poll_sec, plog_poll_nsec))
 		return;
+
 	plog_last_tm.tv_sec = tm.tv_sec;
 	plog_last_tm.tv_nsec = tm.tv_nsec;
 
@@ -560,9 +568,8 @@ void do_logging(float *duty_cycle)
 	 * When dev_msr not supported, the diffs are not pupulated.
 	 * In these cases the associated columns have been disabled anyway.
 	 */
-	if (dev_msr_supported)
-		maxed_cpu = update_perf_diffs(&aperf_diff, &mperf_diff,
-					&pperf_diff, &tsc_diff, need_maxed_cpu);
+	if (perf_stats->dev_msr_supported)
+		m = update_perf_diffs(&sum_norm_perf, need_maxed_cpu);
 
 	for (i = 0; i < MAX_COL_NUM; i++) {
 		if (!col_desc[i].report_enabled)
@@ -583,26 +590,34 @@ void do_logging(float *duty_cycle)
 				diff_ns(&first_tm, &plog_last_tm)/1000000;
 			break;
 		case LOAD_REQUEST:
-			col_desc[i].value = *duty_cycle;
+			col_desc[i].value = dc;
 			break;
 		case LOAD_REALIZED:
 			/* real C0 = delta-mperf/delta-tsc */
-			col_desc[i].value = (float) mperf_diff*100/tsc_diff;
+			col_desc[i].value = (float) perf_stats[m].mperf_diff *
+					      100/perf_stats[m].tsc_diff;
 			if (first_log)
 				col_desc[i].value = 1;
 			break;
 		case SCALE_FACTOR:
-			col_desc[i].value = (float) pperf_diff*100/aperf_diff;
+			col_desc[i].value = (float) perf_stats[m].pperf_diff *
+					      100/perf_stats[m].aperf_diff;
+			if (first_log)
+				col_desc[i].value = 1;
+			break;
+		case NORM_PERF:
+			col_desc[i].value = sum_norm_perf;
+			sum_norm_perf = 0;
 			if (first_log)
 				col_desc[i].value = 1;
 			break;
 		case MAX_FREQ_CPU:
-			col_desc[i].value = maxed_cpu;
+			col_desc[i].value = m;
 			break;
 		case FREQ_REALIZED:
 			/* real freq = TSC* delta-aperf/delta-mperf */
-			col_desc[i].value = (float)cpu_khz *
-						aperf_diff/mperf_diff;
+			col_desc[i].value = (float) perf_stats[m].aperf_diff /
+					   perf_stats[m].mperf_diff*cpu_hfm_mhz;
 			break;
 		case PKG0_POWER_RAPL:
 			pkg_num = i - PKG0_POWER_RAPL;
