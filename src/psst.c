@@ -480,7 +480,8 @@ int main(int argc, char *argv[])
 		}
 		t++;
 	}
-	initialize_cpu_hfm_mhz(perf_stats[0].dev_msr_fd);
+	if (initialize_cpu_hfm_mhz(perf_stats[0].dev_msr_fd))
+		goto bail;
 
 	/* thread for deferred disk IO of logs */
 	if (pthread_create(&io_thread, &attr_io,
