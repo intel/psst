@@ -57,7 +57,7 @@ int initialize_cpu_hfm_mhz(int fd)
 		/* most x86 platform have BaseCLK as 100MHz */
 		cpu_hfm_mhz = ((msr_val >> 8) & 0xffUll) * 100;
 	} else {
-		printf("***cant read MSR_PLATFORM_INFO***\n");
+		printf("***can't read MSR_PLATFORM_INFO***\n");
 		return -1;
 	}
 

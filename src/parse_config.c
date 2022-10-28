@@ -98,7 +98,7 @@ int populate_default_config(struct config *configp)
 
 	if (configp->memmask || configp->gpumask) {
 		/* we want to use cpu0 for non-cpu submitter
-		 * hence we cant have any regular stress function
+		 * hence we can't have any regular stress function
 		 * request on cpu 0 at the same time
 		 */
 		if (CPU_ISSET(0, &configp->cpumask) &&
@@ -356,20 +356,20 @@ static void verbose_prints(struct config *configp)
 int parse_power_shape(char *shape, data_t *pst)
 {
 	char *token;
-	char *delimitor = ",";
+	char *delimiter = ",";
 	char *running;
 
 	if (!strcmp(shape, ""))
 		return 0;
 	/* use strdupa to auto free on stack exit */
 	running = strdup(shape);
-	token = strtok(running, delimitor);
+	token = strtok(running, delimiter);
 	if (!token) {
 		free(running);
 		return 1;
 	}
 	if (!strcmp(token, "single-step")) {
-		token = strtok(NULL, delimitor);
+		token = strtok(NULL, delimiter);
 		if (token) {
 			pst->psn = SINGLE_STEP;
 			sscanf(token,"%f",&pst->psa.single_step.v_units);
@@ -381,11 +381,11 @@ int parse_power_shape(char *shape, data_t *pst)
 			return 0;
 		}
 	} else if (!strcmp(token, "stair-case")) {
-		token = strtok(NULL, delimitor);
+		token = strtok(NULL, delimiter);
 		if (token) {
 			pst->psn = STAIR_CASE;
 			sscanf(token,"%f",&pst->psa.staircase.y_height);
-			token = strtok(NULL, delimitor);
+			token = strtok(NULL, delimiter);
 			if (token) {
 				pst->psa.staircase.x_length = atof(token);
 				dbg_print("staircase x, y %f ,%d\n",
@@ -398,11 +398,11 @@ int parse_power_shape(char *shape, data_t *pst)
 			return 0;
 		}
 	} else if (!strcmp(token, "sinosoid")) {
-		token = strtok(NULL, delimitor);
+		token = strtok(NULL, delimiter);
 		if (token) {
 			pst->psn = SINOSOID;
 			sscanf(token,"%d",&pst->psa.sinosoid.x_wavelength);
-			token = strtok(NULL, delimitor);
+			token = strtok(NULL, delimiter);
 			if (token) {
 				sscanf(token,"%f",&pst->psa.sinosoid.y_amplitude);
 				dbg_print("sine wavelength %d amplitude %f\n",
@@ -415,11 +415,11 @@ int parse_power_shape(char *shape, data_t *pst)
 			return 0;
 		}
 	} else if (!strcmp(token, "single-pulse")) {
-		token = strtok(NULL, delimitor);
+		token = strtok(NULL, delimiter);
 		if (token) {
 			pst->psn = SINGLE_PULSE;
 			sscanf(token,"%f",&pst->psa.single_pulse.y_height);
-			token = strtok(NULL, delimitor);
+			token = strtok(NULL, delimiter);
 			if (token) {
 				sscanf(token,"%d",&pst->psa.single_pulse.x_length);
 				dbg_print("singlepulse x, y %f ,%d\n",
@@ -432,7 +432,7 @@ int parse_power_shape(char *shape, data_t *pst)
 			return 0;
 		}
 	} else if (!strcmp(token, "linear-ramp")) {
-		token = strtok(NULL, delimitor);
+		token = strtok(NULL, delimiter);
 		if (token) {
 			pst->psn = LINEAR_RAMP;
 			sscanf(token,"%f",&pst->psa.linear_ramp.slope_y_per_sec);
@@ -444,11 +444,11 @@ int parse_power_shape(char *shape, data_t *pst)
 			return 0;
 		}
 	} else if (!strcmp(token, "saw-tooth")) {
-		token = strtok(NULL, delimitor);
+		token = strtok(NULL, delimiter);
 		if (token) {
 			pst->psn = SAW_TOOTH;
 			sscanf(token,"%f",&pst->psa.saw_tooth.slope_y_per_sec);
-			token = strtok(NULL, delimitor);
+			token = strtok(NULL, delimiter);
 			if (token)
 				sscanf(token,"%f",&pst->psa.saw_tooth.max_y);
 			dbg_print(" saw tooth slope %.3f, max %.3f\n",

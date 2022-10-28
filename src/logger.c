@@ -265,7 +265,7 @@ void accumulate_flush_record(char *record, int sz)
 		 * swap active with dirty. Note this is not mutex locked.
 		 * the idea for separate buffer of some size is that they
 		 * never conflict. if we have conflict, the purpose of
-		 * delegating io operation to seperate thread is defeated.
+		 * delegating io operation to separate thread is defeated.
 		 */
 		if (!io_inprogress) {
 			/* swap buffers */
@@ -567,7 +567,7 @@ void do_logging(float dc)
 	plog_last_tm.tv_nsec = tm.tv_nsec;
 
 	/*
-	 * When dev_msr not supported, the diffs are not pupulated.
+	 * When dev_msr not supported, the diffs are not populated.
 	 * In these cases the associated columns have been disabled anyway.
 	 */
 	if (perf_stats->dev_msr_supported)

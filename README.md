@@ -30,10 +30,10 @@ a dummy function, but own useful work functions such as accounting, logging (in-
 change etc. psst just executes real work function duty-cycled in controlled loops. More work functions could be 
 added to the this tool overtime & they will be accounted for good -- against the ON-time of duty cycling.
 
-The tool's most importat usecase is to do logging at a fixed "own" overhead --not more than the present requested 
+The tool's most important usecase is to do logging at a fixed "own" overhead --not more than the present requested
 load (active C0 percent). This ensures that monitoring does not influence the overall system load (C0%). This serves
 to monitor soc power/thermal parameters at much fine grained time, typically comparable to governers's poll period 
-(tens of ms).  For instance, a 10ms poll could causes upto 50% cpu overhead in traditional polling. Further, psst's logging
+(tens of ms).  For instance, a 10ms poll could causes up to 50% cpu overhead in traditional polling. Further, psst's logging
 is aligned with the C0 activity that is being analyzed. This ensures a good coalesced synthetic workload.
 
 Sample output with verbose mode
@@ -116,7 +116,7 @@ More details on some options
   gets roughly equal percent of hits at the end.
 
 
-_Note:_ different cpu can be stressed with different funtions simultaneously. To do this just invoking separate
+_Note:_ different cpu can be stressed with different functions simultaneously. To do this just invoking separate
       commands for each cpu. Here is a fun example to demonstrate the controllability of linear ramp on cpu0,
       sine wave on cpu1, single-step on cpu2, single-pulse on cpu3 -- at the same time.
 
