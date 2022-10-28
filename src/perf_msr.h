@@ -27,7 +27,7 @@
 #define MSR_PERF_STATUS		0x198
 
 extern int cpu_hfm_mhz;
-extern uint64_t read_msr(int, uint32_t);
+extern int read_msr(int fd, uint32_t reg, uint64_t *data);
 extern int initialize_dev_msr(int c);
 extern int initialize_cpu_hfm_mhz(int fd);
 extern int init_delta_vars(int n);

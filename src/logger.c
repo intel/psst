@@ -470,10 +470,10 @@ int update_perf_diffs(float *sum_norm_perf, int need_maxed_cpu)
 		 * skip poll for idle bound cpus (e.g, using C-state count).
 		 * note: all-core sum perf considers per-respective poll time
 		 */
-		pperf_raw = read_msr(fd, (uint32_t)MSR_IA32_PPERF);
-		aperf_raw = read_msr(fd, (uint32_t)MSR_IA32_APERF);
-		mperf_raw = read_msr(fd, (uint32_t)MSR_IA32_MPERF);
-		tsc_raw = read_msr(fd, (uint32_t)MSR_IA32_TSC);
+		read_msr(fd, (uint32_t)MSR_IA32_PPERF, &pperf_raw);
+		read_msr(fd, (uint32_t)MSR_IA32_APERF, &aperf_raw);
+		read_msr(fd, (uint32_t)MSR_IA32_MPERF, &mperf_raw);
+		read_msr(fd, (uint32_t)MSR_IA32_TSC, &tsc_raw);
 
 		perf_stats[t].pperf_diff = cpu_get_diff_pperf(pperf_raw, t);
 		perf_stats[t].aperf_diff = cpu_get_diff_aperf(aperf_raw, t);

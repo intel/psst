@@ -23,14 +23,13 @@
 #include <sys/stat.h>
 #include "perf_msr.h"
 
-uint64_t read_msr(int fd, uint32_t reg)
+int read_msr(int fd, uint32_t reg, uint64_t *data)
 {
-	uint64_t data;
-	if (pread(fd, &data, sizeof(data), reg) != sizeof(data)) {
+	if (pread(fd, data, sizeof(*data), reg) != sizeof(*data)) {
 		dbg_print("rdmsr fail on fd:%d\n", fd);
 		return -1;
 	}
-	return data;
+	return 0;
 }
 
 int dev_msr_supported = -1;
@@ -51,9 +50,10 @@ int initialize_dev_msr(int c)
 int initialize_cpu_hfm_mhz(int fd)
 {
 	uint64_t msr_val;
+	int ret;
 
-	msr_val = read_msr(fd, (uint32_t)MSR_PLATFORM_INFO);
-	if (msr_val != -1) {
+	ret = read_msr(fd, (uint32_t)MSR_PLATFORM_INFO, &msr_val);
+	if (ret != -1) {
 		/* most x86 platform have BaseCLK as 100MHz */
 		cpu_hfm_mhz = ((msr_val >> 8) & 0xffUll) * 100;
 	} else {
