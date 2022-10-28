@@ -54,7 +54,7 @@ struct config {
 	unsigned int super_verbose;
 	unsigned int version;
 	char log_file_name[80];
-	unsigned int log_file_fd;
+	int log_file_fd;
 	char shape_func[20];
 	unsigned int poll_period;
 	unsigned int duration;
