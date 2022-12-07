@@ -265,7 +265,7 @@ void accumulate_flush_record(char *record, int sz)
 		 * swap active with dirty. Note this is not mutex locked.
 		 * the idea for separate buffer of some size is that they
 		 * never conflict. if we have conflict, the purpose of
-		 * delegating io operation to seperate thread is defeated.
+		 * delegating io operation to separate thread is defeated.
 		 */
 		if (!io_inprogress) {
 			/* swap buffers */
@@ -470,10 +470,10 @@ int update_perf_diffs(float *sum_norm_perf, int need_maxed_cpu)
 		 * skip poll for idle bound cpus (e.g, using C-state count).
 		 * note: all-core sum perf considers per-respective poll time
 		 */
-		pperf_raw = read_msr(fd, (uint32_t)MSR_IA32_PPERF);
-		aperf_raw = read_msr(fd, (uint32_t)MSR_IA32_APERF);
-		mperf_raw = read_msr(fd, (uint32_t)MSR_IA32_MPERF);
-		tsc_raw = read_msr(fd, (uint32_t)MSR_IA32_TSC);
+		read_msr(fd, (uint32_t)MSR_IA32_PPERF, &pperf_raw);
+		read_msr(fd, (uint32_t)MSR_IA32_APERF, &aperf_raw);
+		read_msr(fd, (uint32_t)MSR_IA32_MPERF, &mperf_raw);
+		read_msr(fd, (uint32_t)MSR_IA32_TSC, &tsc_raw);
 
 		perf_stats[t].pperf_diff = cpu_get_diff_pperf(pperf_raw, t);
 		perf_stats[t].aperf_diff = cpu_get_diff_aperf(aperf_raw, t);
@@ -567,7 +567,7 @@ void do_logging(float dc)
 	plog_last_tm.tv_nsec = tm.tv_nsec;
 
 	/*
-	 * When dev_msr not supported, the diffs are not pupulated.
+	 * When dev_msr not supported, the diffs are not populated.
 	 * In these cases the associated columns have been disabled anyway.
 	 */
 	if (perf_stats->dev_msr_supported)

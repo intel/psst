@@ -53,7 +53,7 @@ int nr_threads;
  */
 static void cpu_work(int on_time_us)
 {
-	(void)on_time_us; /* please the complier */
+	(void)on_time_us; /* please the compiler */
 	return;
 }
 
@@ -214,7 +214,7 @@ int power_shaping(ps_t *ps, float *v_unit)
 		break;
 	}
 
-	/* if we din't return from above cases, we chaged shape. Update ps */
+	/* if we din't return from above cases, we changed shape. Update ps */
 	if (clock_gettime(CLOCK_MONOTONIC, &ps->last))
 		perror("clock_gettime");
 	return 1;
@@ -280,7 +280,7 @@ static void work_fn(void *data)
 			ps.psn = NONE;
 		}
 	}
-	/* initial on/off time calcuation based on duty cycle */
+	/* initial on/off time calculation based on duty cycle */
 	on_time_us = (tick_usec * duty_cycle / 100);
 	off_time_us = tick_usec - on_time_us;
 	dbg_print("Thread:%x DutyCycle:%f ontime:%duS, idletime:%duS\n",
