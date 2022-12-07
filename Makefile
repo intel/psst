@@ -5,7 +5,7 @@ MANDIR = /usr/share/man/man1
 WARNFLAGS = -Wall -Wformat
 CC = gcc
 CFLAGS += -D VERSION=\"$(VERSION)\"
-CFLAGS += -D_LINUX_ -Wall -O2
+CFLAGS += -D_LINUX_ -Wall -O2 -Wfloat-equal
 DBG_CFLAGS = -DDEBUG -g -O0
 LDFLAGS += -DPASS2
 TARGET = psst

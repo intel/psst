@@ -191,24 +191,20 @@ int power_shaping(ps_t *ps, float *v_unit)
 		*v_unit += 1;
 		break;
 	case SINGLE_PULSE:
-		if (*v_unit == 0.1)  /* pulse ended */
-			return 0;
-		/* rising edge of pulse */
-		if (*v_unit != ps->psa.single_pulse.y_height) {
-			*v_unit = ps->psa.single_pulse.y_height;
-		} else {
-			x_delta = (int)ps->psa.single_pulse.x_length;
-			x_delta = (x_delta == 0) ? 1 : x_delta;
-
-			if (is_time_remaining(CLOCK_MONOTONIC, &ps->last,
-						x_delta, 0)) {
-				return 0;
-			} else {  /* pulse ended now */
-				dbg_print(" pulse ended %f after time %d\n",
-							*v_unit, x_delta);
-				*v_unit = 0;
-			}
+		/* rising edge detection */
+		if (!ps->begin.tv_sec) {
+			if (clock_gettime(CLOCK_MONOTONIC, &ps->begin))
+				perror("clock_gettime");
 		}
+
+		x_delta = (int)ps->psa.single_pulse.x_length;
+		*v_unit = ps->psa.single_pulse.y_height;
+
+		/* falling edge detection */
+		if (is_time_remaining(CLOCK_MONOTONIC, &ps->begin, x_delta, 0))
+			return 1;
+		 else
+			*v_unit = MIN_LOAD;
 		break;
 	case NONE:
 		break;
@@ -249,6 +245,7 @@ static void work_fn(void *data)
 	pr = data_ptr->affinity_pr;
 	ps.psn = data_ptr->psn;
 	ps.psa = data_ptr->psa;
+	ps.begin.tv_sec = 0;
 
 	/*
 	 * if this thread is launched for non-cpu work (e,g gpu work requestor)
@@ -263,7 +260,7 @@ static void work_fn(void *data)
 	}
 
 	/* fix duty cycle to to non-zero min value */
-	duty_cycle = (duty_cycle == 0) ? MIN_LOAD : duty_cycle;
+	duty_cycle = (fabsf(duty_cycle - MIN_LOAD) < MIN_LOAD/10) ? MIN_LOAD : duty_cycle;
 
 	if (pr == 0) {
 		plog_poll_sec = MSEC_TO_SEC(configpv.poll_period);
@@ -395,7 +392,8 @@ perf_stats_t *perf_stats;
 
 int main(int argc, char *argv[])
 {
-	int c, t = 0, duty, ret;
+	int c, t = 0, ret;
+	float duty;
 	void *res;
 	data_t *pst;
 	struct config *cfg;
@@ -444,7 +442,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* default/starting duty cycle */
-	duty = 1;
+	duty = MIN_LOAD;
 	nr_threads = CPU_COUNT(&cfg->cpumask);
 
 	if (!init_delta_vars(nr_threads)){

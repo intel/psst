@@ -77,6 +77,7 @@ typedef struct {
 	enum power_shape_name psn;
 	power_shape_attr_t psa;
 	struct timespec last;
+	struct timespec begin;
 } ps_t;
 
 typedef struct {
