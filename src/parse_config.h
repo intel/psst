@@ -56,8 +56,8 @@ struct config {
 	char log_file_name[80];
 	int log_file_fd;
 	char shape_func[20];
-	unsigned int poll_period;
-	unsigned int duration;
+	int poll_period;
+	int duration;
 };
 
 extern int dont_stress_cpu0;

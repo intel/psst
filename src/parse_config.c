@@ -278,9 +278,13 @@ int parse_cmd_config(int ac, char **av, struct config *configp)
 			break;
 		case 'p':
 			sscanf(optarg, "%d", &configp->poll_period);
+			if (configp->poll_period <= 0)
+				return 0;
 			break;
 		case 'd':
 			sscanf(optarg, "%d", &configp->duration);
+			if (configp->duration <= 0)
+				return 0;
 			break;
 		case 'C':
 			sscanf(optarg, "%s", buf);
