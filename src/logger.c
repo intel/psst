@@ -541,8 +541,8 @@ void do_logging(float dc)
 	char buf[64];
 	char final_buf[1024];
 	char val_fmt[16];
-	char delim[] = ",\t  ";
-	char delim_short[] = ",\t";
+	char delim[] = ",    ";
+	char delim_short[] = ",  ";
 	log_col_t i;
 	int sz, sz1, pkg_num;
 	unsigned int m = 0;
@@ -731,6 +731,14 @@ void do_logging(float dc)
 						col_desc[i].header_name);
 				sz += sz1;
 			}
+			i = FREQ_REALIZED;
+			for (int j = 0; j < nr_threads; j++) {
+				sprintf(hdr_fmt, "%%%ds%.2d%s",
+					atoi(col_desc[i].fmt), perf_stats[j].cpu, delim_short);
+				sz1 = sprintf(log_header + sz, hdr_fmt,
+						col_desc[i].header_name);
+				sz += sz1;
+			}
 			sz = sz - sizeof(delim_short) + 2;
 		} else {
 			sz = sz - sizeof(delim) + 2;
@@ -761,6 +769,14 @@ void do_logging(float dc)
 				sz += sz1;
 			}
 			i = LOAD_REALIZED;
+			for (int j = 0; j < nr_threads; j++) {
+				sprintf(hdr_fmt, "%%%ds%s",
+						atoi(col_desc[i].fmt)+2, delim_short);
+				sz1 = sprintf(log_header + sz, hdr_fmt,
+							col_desc[i].unit);
+				sz += sz1;
+			}
+			i = FREQ_REALIZED;
 			for (int j = 0; j < nr_threads; j++) {
 				sprintf(hdr_fmt, "%%%ds%s",
 						atoi(col_desc[i].fmt)+2, delim_short);
@@ -808,6 +824,14 @@ void do_logging(float dc)
 			sprintf(val_fmt, "%%%.3sf%s", col_desc[i].fmt, delim);
 			sz2 = sprintf(final_buf+sz, val_fmt, (float)perf_stats[j].mperf_diff
 					*100/perf_stats[j].tsc_diff);
+			sz += sz2;
+		}
+
+		i = FREQ_REALIZED;
+		for (int j = 0; j < nr_threads; j++) {
+			sprintf(val_fmt, "%%%.3sf%s", col_desc[i].fmt, delim);
+			sz2 = sprintf(final_buf+sz, val_fmt, (float)perf_stats[j].aperf_diff /
+					perf_stats[j].mperf_diff*cpu_hfm_mhz);
 			sz += sz2;
 		}
 	}
