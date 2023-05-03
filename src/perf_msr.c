@@ -86,7 +86,7 @@ int init_delta_vars(int n)
 	last_mperf = malloc(sizeof(uint64_t) * n);
 	last_pperf = malloc(sizeof(uint64_t) * n);
 	last_tsc = malloc(sizeof(uint64_t) * n);
-	if (!last_aperf || !last_mperf || !last_mperf || !last_tsc) {
+	if (!last_aperf || !last_mperf || !last_pperf || !last_tsc) {
 		printf("malloc failure perf vars\n");
 		return 0;
 	}
