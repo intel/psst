@@ -796,7 +796,7 @@ void do_logging(float dc)
 			perror("log_header write");
 
 		printf("report being logged to %s... ^C to exit.\n", configpv.log_file_name);
-		if (configpv.verbose & !configpv.super_verbose)
+		if (configpv.verbose && !configpv.super_verbose)
 			printf("%s\n", log_header);
 	}
 
@@ -841,7 +841,7 @@ void do_logging(float dc)
 	final_buf[sz-1] = '\n';
 	final_buf[sz] = '\0';
 
-	if (configpv.verbose & !configpv.super_verbose)
+	if (configpv.verbose && !configpv.super_verbose)
 		printf("%s", final_buf);
 
 	accumulate_flush_record(final_buf, sz+1);
