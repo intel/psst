@@ -75,5 +75,5 @@ extern void initialize_log_clock(void);
 extern void page_write_disk(void *);
 extern void trigger_disk_io(void);
 extern uint64_t diff_ns(struct timespec *, struct timespec *);
-extern int update_perf_diffs(float *s, int max);
+extern int update_perf_diffs(float *s);
 #endif

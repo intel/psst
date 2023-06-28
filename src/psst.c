@@ -229,7 +229,7 @@ static void work_fn(void *data)
 	int tick_usec = DEFAULT_TICK_USEC;
 	int ret, on_time_us, off_time_us, pr;
 	int cpu_work_exist = 0;
-	float duty_cycle;
+	float duty_cycle, dummy;
 	struct timespec ts;
 	static int start_ms;
 	data_t *data_ptr = (data_t*)data;
@@ -275,6 +275,7 @@ static void work_fn(void *data)
 		dbg_print("thread %d sec: %d nsec %d\n",
 				pr, duration_sec, duration_nsec);
 		initialize_log_clock();
+		update_perf_diffs(&dummy);
 		if (dont_stress_cpu0) {
 			duty_cycle = MIN_LOAD;
 			ps.psn = NONE;

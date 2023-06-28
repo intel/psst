@@ -54,7 +54,7 @@ struct log_col_desc col_desc[] = {
 	/* FREQ_REALIZED: average frequency (cpu0) since last poll */
 	INIT_COL(1, Freq, [MHz], 8.2, 1, MSR_FD, 0),
 	/* MAX_FREQ_CPU: smp cpu that delivered max freq in last sample */
-	INIT_COL(1, MxdCpu, [#], 5.0, 1, NO_FD, 0),
+	INIT_COL(1, MaxCPU, [#], 6.0, 1, NO_FD, 0),
 	/* LOAD_REQUEST: cpu overhead requested by this program */
 	INIT_COL(1, LoadRq, [C0_%], 6.2, 1, NO_FD, 0),
 	/* LOAD_REALIZED: actual overall cpu overhead in the system */
@@ -332,7 +332,6 @@ void page_write_disk(void *confg)
 }
 
 struct config configpv;
-int need_maxed_cpu;
 void initialize_logger(void)
 {
 	int i;
@@ -356,8 +355,7 @@ void initialize_logger(void)
 			}
 			continue;  /* No file descritor required */
 		case MAX_FREQ_CPU:
-			if ((get_node_name("/dev/cpu/0", "msr", NULL) < 0) ||
-							!need_maxed_cpu)
+			if (get_node_name("/dev/cpu/0", "msr", NULL) < 0)
 				col_desc[i].report_enabled = 0;
 			continue;  /* No file descritor required */
 		case TIME_STAMP_MS:
@@ -456,9 +454,10 @@ uint64_t diff_ns(struct timespec *ts_then, struct timespec *ts_now)
 	return diff;
 }
 
-int update_perf_diffs(float *sum_norm_perf, int need_maxed_cpu)
+int update_perf_diffs(float *sum_norm_perf)
 {
-	int fd, maxed_cpu, max_load, next_max_load;
+	int fd, maxed_cpu_idx;
+	float max_load, next_max_load;
 	float _sum_nperf = 0, nperf = 0;
 	uint64_t aperf_raw, mperf_raw, pperf_raw, tsc_raw, poll_cpu_us;
 
@@ -499,34 +498,23 @@ int update_perf_diffs(float *sum_norm_perf, int need_maxed_cpu)
 	}
 	*sum_norm_perf = _sum_nperf;
 
-	if (!need_maxed_cpu) {
-		return 0;
-	}
-
-	/* 
-	 * find the cpu to which max load belonged.
-	 * Ideally for discrete voltage rails systems, we could
-	 * track max frequency. For most other systems
-	 * it is simple to track max load.
-	 * This however assumes that governance has freq as monotonically 
-	 * proportional to load. 
-	 */
 	max_load = 100*(float)perf_stats[0].mperf_diff/perf_stats[0].tsc_diff;
-	maxed_cpu = 0;
+	maxed_cpu_idx = 0;
 
 	 for (int t = 1; t < nr_threads; t++) {
 		next_max_load = 100 * (float) perf_stats[t].mperf_diff /
 						perf_stats[t].tsc_diff;
 
-		if (max_load >= next_max_load)
+		/* float comparison with some meaningful difference */
+		if (max_load > (next_max_load + 0.01))
 			continue;
 		else {
 			max_load = next_max_load;
-			maxed_cpu = perf_stats[t].cpu;
+			maxed_cpu_idx = t;
 		}
 	}
 
-	return maxed_cpu;
+	return maxed_cpu_idx;
 }
 #define LOG_HEADER_SZ 2048
 
@@ -545,7 +533,8 @@ void do_logging(float dc)
 	char delim_short[] = ",  ";
 	log_col_t i;
 	int sz, sz1, pkg_num;
-	unsigned int m = 0;
+	int max_cpu = 0;
+	int m = 0;
 	float sum_norm_perf = 0;
 	struct timespec tm;
 
@@ -558,6 +547,7 @@ void do_logging(float dc)
 	if (!is_time_remaining(CLOCK_MONOTONIC, &first_tm, duration_sec,
 				duration_nsec))
 		exit_cpu_thread = 1;
+
 	/* we log once in plog_poll_* interval */
 	if (!first_log && is_time_remaining(CLOCK_MONOTONIC, &plog_last_tm,
 					plog_poll_sec, plog_poll_nsec))
@@ -570,8 +560,10 @@ void do_logging(float dc)
 	 * When dev_msr not supported, the diffs are not populated.
 	 * In these cases the associated columns have been disabled anyway.
 	 */
-	if (perf_stats->dev_msr_supported)
-		m = update_perf_diffs(&sum_norm_perf, need_maxed_cpu);
+	if (perf_stats->dev_msr_supported) {
+		m = update_perf_diffs(&sum_norm_perf);
+		max_cpu = perf_stats[m].cpu;
+	}
 
 	for (i = 0; i < MAX_COL_NUM; i++) {
 		if (!col_desc[i].report_enabled)
@@ -598,23 +590,17 @@ void do_logging(float dc)
 			/* real C0 = delta-mperf/delta-tsc */
 			col_desc[i].value = (float) perf_stats[m].mperf_diff *
 					      100/perf_stats[m].tsc_diff;
-			if (first_log)
-				col_desc[i].value = 1;
 			break;
 		case SCALE_FACTOR:
 			col_desc[i].value = (float) perf_stats[m].pperf_diff *
 					      100/perf_stats[m].aperf_diff;
-			if (first_log)
-				col_desc[i].value = 1;
 			break;
 		case NORM_PERF:
 			col_desc[i].value = sum_norm_perf;
 			sum_norm_perf = 0;
-			if (first_log)
-				col_desc[i].value = 1;
 			break;
 		case MAX_FREQ_CPU:
-			col_desc[i].value = m;
+			col_desc[i].value = max_cpu;
 			break;
 		case FREQ_REALIZED:
 			/* real freq = TSC* delta-aperf/delta-mperf */

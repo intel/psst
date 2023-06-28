@@ -55,7 +55,6 @@ void print_usage(char *prog)
 	printf("\t-v|--verbose\t\tenables verbose mode (default: disabled when args specified)\n");
 	printf("\t-S|--super-verbose\tprint per-core info (e.g., util) to log file (default: disabled)\n");
 	printf("\t-V|--version\t\tprints version when specified\n");
-	printf("\t-T|--track-max-cpu\ttrack the cpu# which had max freq during each polling\n");
 	printf("\t-h|--help\t\tprints usage when specified\n");
 	printf("\t-s|--shape-func\t\t<shape-func,arg> (default: single-step,0.1)\n");
 	printf("\tSupported power shape functions & args are:\n");
@@ -299,9 +298,6 @@ int parse_cmd_config(int ac, char **av, struct config *configp)
 			break;
 		case 'S':
 			configp->super_verbose = 1;
-			break;
-		case 'T':
-			need_maxed_cpu = 1;
 			break;
 		case 'V':
 			configp->version = 1;
