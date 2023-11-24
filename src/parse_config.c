@@ -286,7 +286,7 @@ int parse_cmd_config(int ac, char **av, struct config *configp)
 				return 0;
 			break;
 		case 'C':
-			sscanf(optarg, "%s", buf);
+			sscanf(optarg, "%127s", buf);
 			if (set_cpu_mask(buf, configp) < 0)
 				return 0;
 			break;
