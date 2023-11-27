@@ -3,7 +3,7 @@ VERSION = 2.1
 BINDIR = /usr/bin
 MANDIR = /usr/share/man/man1
 WARNFLAGS = -Wall -Wformat
-CC = gcc
+CC ?= gcc
 CFLAGS += -D VERSION=\"$(VERSION)\"
 CFLAGS += -D_LINUX_ -Wall -O2 -Wfloat-equal
 DBG_CFLAGS = -DDEBUG -g -O0
