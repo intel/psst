@@ -701,7 +701,7 @@ void do_logging(float dc)
 		}
 
 		if (configpv.super_verbose && col_desc[LOAD_REALIZED].report_enabled) {
-			i = NORM_PERF;
+			i = SCALE_FACTOR;
 			for (int j = 0; j < nr_threads; j++) {
 				sprintf(hdr_fmt, "%%%ds%.2d%s",
 					atoi(col_desc[i].fmt), perf_stats[j].cpu, delim_short);
@@ -745,7 +745,7 @@ void do_logging(float dc)
 			sz += sz1;
 		}
 		if (configpv.super_verbose && col_desc[LOAD_REALIZED].report_enabled) {
-			i = NORM_PERF;
+			i = SCALE_FACTOR;
 			for (int j = 0; j < nr_threads; j++) {
 				/* add 2 digits for cpu# */
 				sprintf(hdr_fmt, "%%%ds%s",
@@ -798,10 +798,11 @@ void do_logging(float dc)
 
 	if (configpv.super_verbose && col_desc[LOAD_REALIZED].report_enabled) {
 		int sz2;
-		i = NORM_PERF;
+		i = SCALE_FACTOR;
 		for (int j = 0; j < nr_threads; j++) {
 			sprintf(val_fmt, "%%%.3sf%s", col_desc[i].fmt, delim);
-			sz2 = sprintf(final_buf+sz, val_fmt, (float)perf_stats[j].nperf);
+			sz2 = sprintf(final_buf+sz, val_fmt, (float) perf_stats[j].pperf_diff *
+							100/perf_stats[j].aperf_diff);
 			sz += sz2;
 		}
 
