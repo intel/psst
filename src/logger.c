@@ -353,14 +353,14 @@ void initialize_logger(void)
 			if (get_node_name("/dev/cpu/0", "msr", NULL) < 0) {
 				col_desc[i].report_enabled = 0;
 			}
-			continue;  /* No file descritor required */
+			continue;  /* No file descriptor required */
 		case MAX_FREQ_CPU:
 			if (get_node_name("/dev/cpu/0", "msr", NULL) < 0)
 				col_desc[i].report_enabled = 0;
-			continue;  /* No file descritor required */
+			continue;  /* No file descriptor required */
 		case TIME_STAMP_MS:
 		case LOAD_REQUEST:
-			continue;  /* No file descritor required */
+			continue;  /* No file descriptor required */
 		case PKG0_POWER_RAPL:
 			if (find_path(BASE_PATH_RAPL, "name", "package-0",
 							"energy_uj", path)) {
