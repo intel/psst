@@ -247,6 +247,7 @@ void trigger_disk_io(void)
 
 void accumulate_flush_record(char *record, int sz)
 {
+	char *temp_pg;
 	if ((PAGE_SIZE_BYTES - active_pg_filled < sz) || exit_cpu_thread)
 		return;
 
@@ -269,10 +270,11 @@ void accumulate_flush_record(char *record, int sz)
 		 */
 		if (!io_inprogress) {
 			/* swap buffers */
+			temp_pg = dirty_pg;
 			dirty_pg = active_pg;
 			dirty_pg_filled = active_pg_filled;
 
-			active_pg = dirty_pg;
+			active_pg = temp_pg;
 			active_pg_filled = 0;
 
 			/* IO the other page */
@@ -317,6 +319,7 @@ void page_write_disk(void *confg)
 			/* reset to top of page */
 			wr_sz = write(cfg->log_file_fd, active_pg,
 							active_pg_filled - 1);
+
 			if (wr_sz == -1)
 				perror("fail active pg write");
 			/* NULL terminate whatever data we have written */
@@ -324,7 +327,7 @@ void page_write_disk(void *confg)
 		}
 		io_inprogress  = 0;
 
-	} while (!exit_io_thread);
+	} while (!exit_io_thread && !exit_cpu_thread);
 
 	pthread_cond_destroy(&pcond);
 	pthread_mutex_destroy(&pmutex);
@@ -516,7 +519,8 @@ int update_perf_diffs(float *sum_norm_perf)
 
 	return maxed_cpu_idx;
 }
-#define LOG_HEADER_SZ 2048
+#define LOG_HEADER_SZ_MIN 2048
+#define PER_THREAD_SZ 24
 
 int first_log = 1;
 uint64_t pp0_initial_energy, soc_initial_energy[4];
@@ -526,8 +530,9 @@ int rapl_pp0_supported;
 
 void do_logging(float dc)
 {
+	int log_header_sz = LOG_HEADER_SZ_MIN + nr_threads*PER_THREAD_SZ;
 	char buf[64];
-	char final_buf[1024];
+	char final_buf[log_header_sz];
 	char val_fmt[16];
 	char delim[] = ",    ";
 	char delim_short[] = ",  ";
@@ -680,7 +685,7 @@ void do_logging(float dc)
 	}
 
 	if (!log_header) {
-		log_header = malloc(LOG_HEADER_SZ * sizeof(char));
+		log_header = malloc(log_header_sz * sizeof(char));
 		if (!log_header) {
 			perror("Failed to malloc log_header");
 			exit(EXIT_FAILURE);
@@ -830,8 +835,8 @@ void do_logging(float dc)
 
 	if (configpv.verbose && !configpv.super_verbose)
 		printf("%s", final_buf);
-
-	accumulate_flush_record(final_buf, sz+1);
+	if (!exit_cpu_thread)
+		accumulate_flush_record(final_buf, sz+1);
 
 	first_log = 0;
 }
