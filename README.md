@@ -5,7 +5,7 @@ What can psst do?
 __PSST__ is a userspace controlled power virus for cpu and other soc-sub components such as gpu & memory.
 Presently only cpu is supported. The intent is to subject the SoC at different run-time-varying utilization levels for analysis.
 This is done by controlled duty-cycling of utilization to specific contour.
-A simplest contour could be fixed low utilzation. This allows simple usage such as logging of system parameters at fixed low overhead even at small polling intervals (ms).
+A simplest contour could be fixed low utilization. This allows simple usage such as logging of system parameters at fixed low overhead even at small polling intervals (ms).
 More complex usages, such as study of governors, workloads e.t.c., are possible by applying different power shape contours. 
 
 Dependencies
@@ -62,7 +62,8 @@ Sample output with verbose mode
 _Note:_ Sometimes system study involves clamping values or disabling features that influence result parameters.
       Typically this involves frequency influencing features such as cpu-freq governors or other such features.
       Clamping frequency is not intended part of this tool. Such requirement are best handled on per-platform using
-      sysfs or appropriate interface. However, it may be a good idea to kill Xwindows and run in console mode, if background tasks are treated as irrelavant utilization noise in your analysis.
+      sysfs or appropriate interface. However, it may be a good idea to kill Xwindows and run in console mode, if background
+      tasks are treated as irrelevant utilization noise in your analysis.
 
 Plotting and analysis
 =====================

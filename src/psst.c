@@ -248,7 +248,7 @@ static void work_fn(void *data)
 	ps.begin.tv_sec = 0;
 
 	/*
-	 * if this thread is launched for non-cpu work (e,g gpu work requestor)
+	 * if this thread is launched for non-cpu work (e,g gpu work requester)
 	 * let it run like any normal thread in system
 	 */
 	if (CPU_ISSET(pr, &configpv.cpumask)) {
