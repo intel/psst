@@ -35,6 +35,7 @@ static struct option long_options[] = {
 	{"log-file",    1,      0,      'l'},
 	{"poll-period", 1,      0,      'p'},
 	{"shape-func",  1,      0,      's'},
+	{"workload",    1,      0,      'w'},
 	{"verbose",     0,      0,      'v'},
 	{"super-verbose",0,     0,      'S'},
 	{"version",     0,      0,      'V'},
@@ -57,6 +58,8 @@ void print_usage(char *prog)
 	printf("\t-V|--version\t\tprints version when specified\n");
 	printf("\t-h|--help\t\tprints usage when specified\n");
 	printf("\t-s|--shape-func\t\t<shape-func,arg> (default: single-step,0.1)\n");
+	printf("\t-w|--workload\t\t<workload-name> SSE/AVX instruction mix (default: scalar-int)\n");
+	printf("\t\t\t\tUse -w list to print all available workloads.\n");
 	printf("\tSupported power shape functions & args are:\n");
 	printf("\t\t<single-step,v>\t\t");
 	printf("where v is load step height.\n");
@@ -83,6 +86,10 @@ int populate_default_config(struct config *configp)
 {
 	if (!configp->shape_func[0])
 		strncpy(configp->shape_func, "single-step,0.1", 16);
+
+	if (!configp->workload_name[0])
+		strncpy(configp->workload_name, "scalar-int",
+			sizeof(configp->workload_name));
 
 	if (!configp->v_unit)
 		configp->v_unit = 'C';
@@ -266,7 +273,7 @@ int parse_cmd_config(int ac, char **av, struct config *configp)
 	if (ac == 1)
 		configp->verbose = 1;
 
-	while ((c = getopt_long(ac, av, "s:G:C:E:l:p:d:hvVTS",
+	while ((c = getopt_long(ac, av, "s:G:C:E:l:p:d:w:hvVTS",
 			long_options, &option_index)) != -1) {
 		/* XXX check optarg valid */
 		switch (c) {
@@ -306,6 +313,11 @@ int parse_cmd_config(int ac, char **av, struct config *configp)
 			len = sizeof(configp->shape_func);
 			strncpy(configp->shape_func, optarg, len);
 			configp->shape_func[len - 1] = '\0';
+			break;
+		case 'w':
+			len = sizeof(configp->workload_name);
+			strncpy(configp->workload_name, optarg, len);
+			configp->workload_name[len - 1] = '\0';
 			break;
 		case 'h':
 		case '?':

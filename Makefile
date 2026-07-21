@@ -15,7 +15,7 @@ DEL_FILE = rm -f
 
 SRC_PATH = ./src
 OBJS =  $(SRC_PATH)/parse_config.o $(SRC_PATH)/logger.o $(SRC_PATH)/rapl.o \
-	$(SRC_PATH)/perf_msr.o $(SRC_PATH)/psst.o
+	$(SRC_PATH)/perf_msr.o $(SRC_PATH)/cpu_workloads.o $(SRC_PATH)/psst.o
 OBJS +=
 
 psst: $(OBJS) Makefile

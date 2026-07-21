@@ -37,6 +37,7 @@
 #include "logger.h"
 #include "rapl.h"
 #include "perf_msr.h"
+#include "cpu_workloads.h"
 
 
 void print_version(void)
@@ -46,15 +47,18 @@ void print_version(void)
 
 int nr_threads;
 
+/* Active workload function, resolved from -w <name> at startup */
+static workload_fn_t active_workload_fn;
+
 /*
  * Any additional stress function goes here.
  * However, the motive of this tool is reasonable peak power & its
  * controllabilty. both motives are met using meaningful work.
  */
-static void cpu_work(int on_time_us)
+static void cpu_work(void)
 {
-	(void)on_time_us; /* please the compiler */
-	return;
+	if (active_workload_fn)
+		active_workload_fn();
 }
 
 int ts_compare(struct timespec *time1, struct timespec *time2)
@@ -322,7 +326,7 @@ static void work_fn(void *data)
 			if (!start_pending) {
 				/* No work for cpu0 if it was just submitter */
 				if ((dont_stress_cpu0 || (pr != 0)) && cpu_work_exist) {
-					cpu_work(on_time_us);
+					cpu_work();
 				}
 			}
 
@@ -412,6 +416,12 @@ int main(int argc, char *argv[])
 		exit(EXIT_SUCCESS);
 	}
 
+	/* Handle "-w list" before the root check so it works without sudo */
+	if (strcmp(cfg->workload_name, "list") == 0) {
+		list_workloads();
+		exit(EXIT_SUCCESS);
+	}
+
 	if (geteuid() != 0) {
 		printf("run as root\n");
 		exit(EXIT_FAILURE);
@@ -421,6 +431,15 @@ int main(int argc, char *argv[])
 		printf("failed to populate_default_config\n");
 		exit(EXIT_FAILURE);
 	}
+
+	/* Resolve and validate the requested SIMD workload plugin */
+	active_workload_fn = resolve_workload(cfg->workload_name);
+	if (!active_workload_fn) {
+		/* "list" was requested — workload table already printed */
+		exit(EXIT_SUCCESS);
+	}
+	if (cfg->verbose)
+		printf("CPU workload: %s\n", cfg->workload_name);
 
 	pthread_t io_thread;
 	pthread_attr_t attr_io;

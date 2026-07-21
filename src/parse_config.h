@@ -56,6 +56,7 @@ struct config {
 	char log_file_name[80];
 	int log_file_fd;
 	char shape_func[20];
+	char workload_name[32]; /* SSE/AVX workload plugin (-w); default: scalar-int */
 	int poll_period;
 	int duration;
 };
